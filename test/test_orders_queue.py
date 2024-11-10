@@ -74,5 +74,7 @@ class  TestOrdersQueue(unittest.TestCase):
         self.assertEqual(filled[1], (last_in_order))
         self.assertEqual(orders_queue.is_empty(), True)
         self.assertEqual(order_to_match.is_filled(), False)
-        self.assertEqual(order_to_match.remaining_quantity, order_to_match.initial_quantity - 200)
+
+        filled = first_in_order.initial_quantity + last_in_order.initial_quantity
+        self.assertEqual(order_to_match.remaining_quantity, order_to_match.initial_quantity - filled)
 
