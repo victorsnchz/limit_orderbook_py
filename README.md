@@ -11,6 +11,9 @@ The aim is
 
 Project discussion
 
+Design patterns
+- Factory for orders: create objects of unique type, subtype decided by user, instantiation taken care of via decicated factory-function.
+
 Data structures used
 - min/max heaps for orderbook sides: fast access to top-of-book and any layer of the orderbook
 - OrderedDict for order queues: dedicated method for FIFO queues + clear functionality intent (Python base dict now ordered, but using OrderedDict makes it obvious)
