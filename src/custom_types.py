@@ -14,6 +14,5 @@ class OrderType(enum.Enum):
     LIMIT = enum.auto()
 
 class OrderExecutionRules(enum.Enum):
-    FILL_OR_KILL = enum.auto()
-    GOOD_TILL_CANCELLED = enum.auto()
-
+    FILL_OR_KILL = 'fill_or_kill'
+    GOOD_TILL_CANCELLED ='good_till_cancelled'
