@@ -9,7 +9,6 @@ class  TestOrdersQueue(unittest.TestCase):
 
     orders_queue = OrdersQueue()
 
-
     def test_case_add(self):
 
         orders_queue = OrdersQueue()

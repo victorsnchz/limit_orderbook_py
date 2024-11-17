@@ -25,7 +25,7 @@ class TestOrder(unittest.TestCase):
         gtc_order.fill_quantity(to_fill)
         self.assertEqual(gtc_order.remaining_quantity, gtc_order.initial_quantity - to_fill)
         self.assertEqual(gtc_order.is_filled(), False)
-    
+
     def test_case_full_fill(self):
 
         gtc_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
