@@ -15,12 +15,3 @@ class OrderType(enum.Enum):
 class OrderExecutionRules(enum.Enum):
     FILL_OR_KILL = 'fill_or_kill'
     GOOD_TILL_CANCELLED ='good_till_cancelled'
-
-
-# TODO
-# fix, this looks sketchy
-def trade_side_to_book_side(trade_side: TradeSide) -> BookSide.value:
-    if TradeSide.value == 'BUY':
-        return BookSide.BID
-    
-    return BookSide.ASK
