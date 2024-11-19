@@ -7,7 +7,6 @@ class Order:
 
     type: OrderType
     execution_rules: OrderExecutionRules
-    side: BookSide
     initial_quantity: float | int
     price: float | int
 
