@@ -1,6 +1,11 @@
 import unittest
 import sys
-#??? lookup imports
+
+# TODO
+# fix import system accross package
+# seems like test_order called first, appends src to path then subsequent test modules can test src
+# individual test module will fail import otherwise
+
 sys.path.append('../')
 sys.path.append('src')
 
