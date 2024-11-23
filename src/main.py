@@ -18,13 +18,6 @@ def main():
 
 
     levels.cancel_order(first_in_order)
-    queue.add_order(first_in_order)
-    queue.add_order(last_in_order)
-
-    order_to_match = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.FILL_OR_KILL,
-                          side = BookSide.ASK, initial_quantity=150.0, price = 100.0)
-
-    filled = queue.match_order(order_to_match)
 
     print('hello world')
 
