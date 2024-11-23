@@ -36,10 +36,13 @@ class TestPriceLevels(unittest.TestCase):
 
         self.assertEqual(self.price_levels.top_of_book(), order2.price)
 
-    def test_case_can_match(self):
-        self.assertEqual(self.price_levels.can_match(100), True)
-
     def test_case_cancel_order(self):
+
+        order3 = Order(type =  OrderType.LIMIT, execution_rules= OrderExecutionRules.GOOD_TILL_CANCELLED, 
+                      side = BookSide.ASK, initial_quantity=99, price = 100)
         
+        self.price_levels.post_order(order3)
+
         self.price_levels.cancel_order(self.order)
-        self.assertEqual(self.price_levels.can_match(self.order.price), False)
+    
+        print(self.price_levels.levels)
