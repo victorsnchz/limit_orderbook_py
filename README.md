@@ -1,4 +1,4 @@
-# limit_orderbook_py - IN PROGRESS
+# limit_orderbook_py
 Python implementation of a limit orderbook data structure.
 
 Why?
