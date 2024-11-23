@@ -13,16 +13,24 @@ class PriceLevels:
 
     def __init__(self, side: BookSide):
         
+        # price levels should be agnostic to its nature
+        # implement a tree to enforce this
+        # now we use a hash map so necessary to specify side to return top of book or 
+        # know how to inspect orders when matching orders
+        # using a hashmap creates confusions and complexity in implementation
+        
         self.side = side
+        self.levels_ordered = list()
         self.levels = dict()
 
     def post_order(self, order) -> None:
-        if not self.can_match(order.price):
+
+        if not order.price in self.levels_ordered:
             self.levels[order.price] = OrdersQueue()
+            self.levels_ordered.append(order.price)
+            self.levels_ordered.sort(reverse = (self.side == BookSide.BID))
+
         self.levels[order.price].add_order(order)
-        
-    def can_match(self, price: float) -> bool:
-        return price in self.levels
 
     # pass price & id ? or order obj
     def cancel_order(self, order: Order) -> None:
@@ -35,12 +43,11 @@ class PriceLevels:
             print('error cancelling order')
 
     def _delete_level(self, price: float):
+        self.levels_ordered.remove(price)
         del self.levels[price]
     
     def is_level_empty(self, price):
         return self.levels[price].is_empty()
 
     def top_of_book(self) -> float:
-        if self.side.value == BookSide.BID:
-            return max(self.levels.keys())
-        return min(self.levels.keys())
+        return self.levels_ordered[0]
