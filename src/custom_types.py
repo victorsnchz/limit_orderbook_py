@@ -1,9 +1,5 @@
 import enum
 
-class TradeSide(enum.Enum):
-    BUY = 1
-    SELL = -1
-
 class BookSide(enum.Enum):
     BID = 1
     ASK = -1
