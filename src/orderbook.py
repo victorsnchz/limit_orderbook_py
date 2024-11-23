@@ -1,4 +1,5 @@
 from order import Order
+from custom_types import BookSide, TradeSide
 
 class OrderBook:
 
@@ -13,6 +14,10 @@ class OrderBook:
 
     def cancel_order(self, id):
         pass
+
+    def can_match_order(self, order: Order):
+        return True
+
 
     def modify_order(self, order_id) -> int:
         self.cancel_order(order_id)
