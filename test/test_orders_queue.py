@@ -13,7 +13,7 @@ class  TestOrdersQueue(unittest.TestCase):
 
         orders_queue = OrdersQueue()
 
-        new_order = gtc_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
+        new_order  = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
                           side = BookSide.BID, initial_quantity=100.0, price = 100.0)
         orders_queue.add_order(new_order)
 
@@ -23,7 +23,8 @@ class  TestOrdersQueue(unittest.TestCase):
 
         orders_queue = OrdersQueue()
         new_order  = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED, 
-                           initial_quantity=100.0, price = 100.0)
+                           side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        
         orders_queue.add_order(new_order)
         order_id = list(orders_queue.queue.keys())[0]
         orders_queue.remove_order(order_id)
