@@ -9,12 +9,11 @@ class  TestOrdersQueue(unittest.TestCase):
 
     orders_queue = OrdersQueue()
 
-
     def test_case_add(self):
 
         orders_queue = OrdersQueue()
 
-        new_order = gtc_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
+        new_order  = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
                           side = BookSide.BID, initial_quantity=100.0, price = 100.0)
         orders_queue.add_order(new_order)
 
@@ -23,8 +22,9 @@ class  TestOrdersQueue(unittest.TestCase):
     def test_case_remove(self):
 
         orders_queue = OrdersQueue()
-        new_order = gtc_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                          side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        new_order  = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED, 
+                           side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        
         orders_queue.add_order(new_order)
         order_id = list(orders_queue.queue.keys())[0]
         orders_queue.remove_order(order_id)
@@ -56,11 +56,11 @@ class  TestOrdersQueue(unittest.TestCase):
 
         orders_queue = OrdersQueue()
 
-        first_in_order = gtc_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                          side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        first_in_order =  Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
+                            side = BookSide.ASK, initial_quantity=100.0, price = 100.0)
         
-        last_in_order = gtc_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                          side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        last_in_order =  Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
+                               side = BookSide.ASK, initial_quantity=100.0, price = 100.0)
         
         orders_queue.add_order(first_in_order)
         orders_queue.add_order(last_in_order)
