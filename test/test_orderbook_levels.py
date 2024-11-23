@@ -39,10 +39,10 @@ class TestPriceLevels(unittest.TestCase):
     def test_case_cancel_order(self):
 
         order3 = Order(type =  OrderType.LIMIT, execution_rules= OrderExecutionRules.GOOD_TILL_CANCELLED, 
-                      side = BookSide.ASK, initial_quantity=99, price = 100)
+                      side = BookSide.ASK, initial_quantity=99, price = 98)
         
         self.price_levels.post_order(order3)
-
-        self.price_levels.cancel_order(self.order)
-    
-        print(self.price_levels.levels)
+        self.assertEqual(order3.id in self.price_levels.levels[order3.price].queue, True)
+        self.price_levels.cancel_order(order3)
+        self.assertEqual(order3.id in self.price_levels.levels_ordered, False)
+        self.assertEqual(order3.id in self.price_levels.levels, False)
