@@ -5,9 +5,9 @@ import datetime
 @dataclasses.dataclass(frozen=True)
 class Order:
 
+    side: BookSide
     type: OrderType
     execution_rules: OrderExecutionRules
-    side: BookSide
     initial_quantity: float | int
     price: float | int
 
