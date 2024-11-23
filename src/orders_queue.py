@@ -7,6 +7,8 @@ class OrdersQueue:
         self.queue = collections.OrderedDict()
     
     def add_order(self, order: Order):
+        # TODO
+        # verif if order not already in queue
         self.queue[order.id] = order
 
     def remove_order(self, order_id: str) -> Order:
