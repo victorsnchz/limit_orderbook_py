@@ -23,6 +23,9 @@ class PriceLevels:
         self.levels_ordered = list()
         self.levels = dict()
 
+    def is_empty(self) -> bool:
+        return bool(self.levels_ordered)
+
     def post_order(self, order) -> None:
 
         if not order.price in self.levels_ordered:
