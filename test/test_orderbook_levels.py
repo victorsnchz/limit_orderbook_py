@@ -13,6 +13,9 @@ class TestPriceLevels(unittest.TestCase):
     order = Order(type =  OrderType.LIMIT, execution_rules= OrderExecutionRules.GOOD_TILL_CANCELLED, 
                       side = BookSide.ASK, initial_quantity=100, price = 100)
     
+    def test_case_empty(self):
+        self.assertEqual(self.price_levels.is_empty(), True)
+
     def test_case_add_order(self):
         
         self.price_levels.post_order(self.order)
