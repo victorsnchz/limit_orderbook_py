@@ -7,7 +7,7 @@ from custom_types import OrderType, OrderExecutionRules, BookSide
 
 class TestOrderbook(unittest.TestCase):
 
-    def test_case_match_order(self):
+    def test_case_match_no_order(self):
 
         orderbook = OrderBook()
         new_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
@@ -17,6 +17,10 @@ class TestOrderbook(unittest.TestCase):
         self.assertEqual(orderbook.can_match_order(new_order), False)
 
     def test_case_post_order(self):
-
+        orderbook = OrderBook()
         new_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
                           side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        
+        orderbook.post_order(new_order)
+
+        self.assertEqual(orderbook.bids.levels[new_order.price].queue[new_order.id], new_order)
