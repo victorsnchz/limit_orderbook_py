@@ -22,7 +22,7 @@ class PriceLevels:
         self.side = side
         self.levels_ordered = list()
         self.levels = dict()
-
+    
     def is_empty(self) -> bool:
         return not bool(self.levels_ordered)
 
@@ -52,5 +52,20 @@ class PriceLevels:
     def is_level_empty(self, price):
         return self.levels[price].is_empty()
 
-    def top_of_book(self) -> float:
+    def get_best_price(self) -> float:
         return self.levels_ordered[0]
+
+    def get_top_of_book(self) -> OrdersQueue:
+
+        best_price = self.get_best_price()
+        return self.levels[best_price]
+    
+    def match_order(self, order) -> list[Order]:
+        top_of_book = self.get_top_of_book()
+        filled_orders = top_of_book.match_order(order)
+
+        best_price = self.get_best_price()
+        if self.is_level_empty(best_price):
+            self._delete_level(best_price)
+
+        return filled_orders
