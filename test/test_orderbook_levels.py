@@ -33,7 +33,7 @@ class TestPriceLevels(unittest.TestCase):
 
         self.assertEqual(order.id in price_levels.levels[order.price].queue, True)
 
-    def test_case_top_of_book(self):
+    def test_case_best_price(self):
 
         price_levels = PriceLevels(BookSide.ASK)
 
@@ -45,7 +45,7 @@ class TestPriceLevels(unittest.TestCase):
         price_levels.post_order(order)
         price_levels.post_order(order2)
 
-        self.assertEqual(price_levels.top_of_book(), order2.price)
+        self.assertEqual(price_levels.get_best_price(), order2.price)
 
     def test_case_cancel_order(self):
 
