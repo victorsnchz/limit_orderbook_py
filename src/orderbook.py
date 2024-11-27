@@ -48,12 +48,12 @@ class OrderBook:
     def can_match_order(self, order: Order) -> bool:
 
         if order.side == BookSide.BID:
-            if self.bids.is_empty():
+            if self.asks.is_empty():
                 return False
             return order.price >= self.asks.top_of_book()
 
         elif order.side == BookSide.ASK:
-            if self.asks.is_empty():
+            if self.bids.is_empty():
                 return False
             return order.price <= self.bids.top_of_book()
         
