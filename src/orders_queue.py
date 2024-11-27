@@ -17,7 +17,7 @@ class OrdersQueue:
     def is_empty(self):
         return not bool(self.queue)
 
-    def match_order(self, order_to_match: Order) -> tuple[list[Order], Order]:
+    def match_order(self, order_to_match: Order) -> list[Order]:
 
         filled_orders = []
 
@@ -31,4 +31,6 @@ class OrdersQueue:
             if self.queue[waiting_order_id].is_filled():
                 filled_orders.append(self.queue.pop(waiting_order_id))
             
-        return filled_orders, order_to_match
+        # order_to_match field 'remaining qty' is mutable, no need to return a new instance
+        # only return a list of filled orders to pass up info
+        return filled_orders
