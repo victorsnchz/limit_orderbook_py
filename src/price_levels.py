@@ -15,7 +15,7 @@ class PriceLevels:
         
         # price levels should be agnostic to its nature
         # implement a tree to enforce this
-        # now we use a hash map so necessary to specify side to return top of book or 
+        # now we use a hash map => necessary to specify side to return top of book or 
         # know how to inspect orders when matching orders
         # using a hashmap creates confusions and complexity in implementation
         
@@ -24,7 +24,7 @@ class PriceLevels:
         self.levels = dict()
 
     def is_empty(self) -> bool:
-        return bool(self.levels_ordered)
+        return not bool(self.levels_ordered)
 
     def post_order(self, order) -> None:
 
