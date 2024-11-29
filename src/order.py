@@ -26,3 +26,41 @@ class Order:
 
     def is_filled(self) -> bool:
         return self.remaining_quantity == 0
+    
+@dataclasses.dataclass(frozen=True)
+class LimitOrder:
+
+    order: Order
+    
+    def fill_quantity(self, quantity_to_fill) -> None:
+        self.order.fill_quantity(quantity_to_fill)
+        
+    def is_filled(self) -> bool:
+        return self.order.is_filled()
+        
+@dataclasses.dataclass(frozen=True)
+class MarketOrder:
+
+    order: Order
+
+    def fill_quantity(self, quantity_to_fill) -> None:
+        self.order.fill_quantity(quantity_to_fill)
+        
+    def is_filled(self) -> bool:
+        return self.order.is_filled()
+
+
+class OrderFactory:
+
+    orders = {
+        OrderType.LIMIT: LimitOrder,
+        OrderType.MARKET: MarketOrder
+    }
+    
+    def create_order(self, order_type: OrderType,
+                     side: BookSide, execution_rules: OrderExecutionRules,
+                     initial_quantity: float, price: float):
+
+        new_order = Order(side, execution_rules, initial_quantity, price)
+
+        return self.orders[order_type](new_order)
