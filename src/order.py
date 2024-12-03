@@ -3,7 +3,7 @@ from custom_types import OrderType, BookSide, OrderExecutionRules
 import datetime
 
 @dataclasses.dataclass(frozen=True)
-class Order:
+class OrderParameters:
 
     side: BookSide
     type: OrderType
@@ -30,7 +30,7 @@ class Order:
 @dataclasses.dataclass(frozen=True)
 class LimitOrder:
 
-    order: Order
+    order: OrderParameters
     
     def fill_quantity(self, quantity_to_fill) -> None:
         self.order.fill_quantity(quantity_to_fill)
@@ -41,7 +41,7 @@ class LimitOrder:
 @dataclasses.dataclass(frozen=True)
 class MarketOrder:
 
-    order: Order
+    order: OrderParameters
 
     def fill_quantity(self, quantity_to_fill) -> None:
         self.order.fill_quantity(quantity_to_fill)
