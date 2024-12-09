@@ -1,6 +1,6 @@
 from orders_queue import OrdersQueue
-from custom_types import BookSide
-from order import Order
+from custom_types import Side
+from order import Order, LimitOrder
 
 # TODO
 # compare perf hashmap vs tree for both many and few elements
@@ -11,7 +11,7 @@ from order import Order
 
 class PriceLevels:
 
-    def __init__(self, side: BookSide):
+    def __init__(self, side: Side):
         
         # price levels should be agnostic to its nature
         # implement a tree to enforce this
@@ -26,21 +26,21 @@ class PriceLevels:
     def is_empty(self) -> bool:
         return not bool(self.levels_ordered)
 
-    def post_order(self, order) -> None:
+    def post_order(self, order: LimitOrder ) -> None:
 
-        if not order.price in self.levels_ordered:
-            self.levels[order.price] = OrdersQueue()
-            self.levels_ordered.append(order.price)
-            self.levels_ordered.sort(reverse = (self.side == BookSide.BID))
+        if not order.limit_price in self.levels_ordered:
+            self.levels[order.limit_price] = OrdersQueue()
+            self.levels_ordered.append(order.limit_price)
+            self.levels_ordered.sort(reverse = (self.side == Side.BID))
 
-        self.levels[order.price].add_order(order)
+        self.levels[order.limit_price].add_order(order)
 
     # pass price & id ? or order obj
-    def cancel_order(self, order: Order) -> None:
+    def cancel_order(self, order: LimitOrder) -> None:
         try:
-            self.levels[order.price].remove_order(order.id)
-            if self.is_level_empty(order.price):
-                self._delete_level(order.price)
+            self.levels[order.limit_price].remove_order(order.id)
+            if self.is_level_empty(order.limit_price):
+                self._delete_level(order.limit_price)
             
         except:
             print('error cancelling order')
