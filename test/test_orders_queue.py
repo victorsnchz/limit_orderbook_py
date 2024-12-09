@@ -1,8 +1,8 @@
 import unittest
 
 from src.orders_queue import OrdersQueue
-from order import Order
-from custom_types import OrderExecutionRules, OrderType, BookSide
+from order import Order, LimitOrder, MarketOrder, OrderID, OrderParameters
+from custom_types import ExecutionRules, OrderType, Side
 
 class  TestOrdersQueue(unittest.TestCase):
 
@@ -10,19 +10,19 @@ class  TestOrdersQueue(unittest.TestCase):
 
         orders_queue = OrdersQueue()
 
-        new_order  = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                          side = BookSide.BID, initial_quantity=100.0, price = 100.0)
-        orders_queue.add_order(new_order)
+        order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
+        orders_queue.add_order(order)
 
-        self.assertEqual(new_order.id in orders_queue.queue, True)
+        self.assertEqual(order.id in orders_queue.queue, True)
 
     def test_case_remove(self):
 
         orders_queue = OrdersQueue()
-        new_order  = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED, 
-                           side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
         
-        orders_queue.add_order(new_order)
+        orders_queue.add_order(order)
         order_id = list(orders_queue.queue.keys())[0]
         orders_queue.remove_order(order_id)
 
@@ -32,17 +32,17 @@ class  TestOrdersQueue(unittest.TestCase):
 
         orders_queue = OrdersQueue()
 
-        first_in_order = gtc_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                          side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        first_in_order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
         
-        last_in_order = gtc_order = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                          side = BookSide.BID, initial_quantity=100.0, price = 100.0)
+        last_in_order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(1),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
         
         orders_queue.add_order(first_in_order)
         orders_queue.add_order(last_in_order)
 
-        order_to_match = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                          side = BookSide.ASK, initial_quantity=150.0, price = 100.0)
+        order_to_match = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(2),
+                               limit_price=99, execution_rules = ExecutionRules.GTC)
         
         filled = orders_queue.match_order(order_to_match)
         
@@ -53,17 +53,17 @@ class  TestOrdersQueue(unittest.TestCase):
 
         orders_queue = OrdersQueue()
 
-        first_in_order =  Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                            side = BookSide.ASK, initial_quantity=100.0, price = 100.0)
+        first_in_order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
         
-        last_in_order =  Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                               side = BookSide.ASK, initial_quantity=100.0, price = 100.0)
+        last_in_order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(1),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
         
         orders_queue.add_order(first_in_order)
         orders_queue.add_order(last_in_order)
 
-        order_to_match = Order(type = OrderType.LIMIT, execution_rules = OrderExecutionRules.GOOD_TILL_CANCELLED,
-                          side = BookSide.ASK, initial_quantity=500.0, price = 100.0)
+        order_to_match = LimitOrder(OrderParameters(Side.ASK, 500), OrderID(2),
+                               limit_price=99, execution_rules = ExecutionRules.GTC)
         
         filled = orders_queue.match_order(order_to_match)
         
@@ -72,6 +72,6 @@ class  TestOrdersQueue(unittest.TestCase):
         self.assertEqual(orders_queue.is_empty(), True)
         self.assertEqual(order_to_match.is_filled(), False)
 
-        filled = first_in_order.initial_quantity + last_in_order.initial_quantity
-        self.assertEqual(order_to_match.remaining_quantity, order_to_match.initial_quantity - filled)
+        filled = first_in_order.get_initial_quantity() + last_in_order.get_initial_quantity()
+        self.assertEqual(order_to_match.remaining_quantity, order_to_match.get_initial_quantity() - filled)
 
