@@ -17,13 +17,12 @@ def main():
     order_to_match = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(3),
                             limit_price=98, execution_rules = ExecutionRules.GTC)
 
-    
-
     orderbook.post_order(order1)
     orderbook.post_order(order2)
     orderbook.post_order(order3)
 
     filled_orders, posted_order_to_match = orderbook.post_order(order_to_match)
+    
     pass
 
 if __name__ == '__main__':
