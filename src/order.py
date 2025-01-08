@@ -24,8 +24,8 @@ class Order:
 
     def __init__(self, parameters: OrderParameters, id: OrderID):
         
-        self._parameters = parameters
-        self.id = id
+        self._parameters: OrderParameters = parameters
+        self.id: OrderID = id
 
         self.remaining_quantity = self._parameters.initial_quantity
 
@@ -49,8 +49,7 @@ class MarketOrder(Order):
     
     def __init__(self, parameters: OrderParameters, id: OrderID):
         super().__init__(parameters, id)
-        
-        
+          
 class LimitOrder(Order):
 
     def __init__(self, parameters: OrderParameters, id: OrderID,

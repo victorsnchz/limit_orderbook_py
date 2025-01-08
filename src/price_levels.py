@@ -2,6 +2,8 @@ from orders_queue import OrdersQueue
 from custom_types import Side
 from order import Order, LimitOrder
 
+from sortedcontainers import SortedDict
+
 # TODO
 # compare perf hashmap vs tree for both many and few elements
 # use rebalancing tree: more elegant, fast access to sorted layers, very fast access to unkown top of book layers
@@ -11,61 +13,49 @@ from order import Order, LimitOrder
 
 class PriceLevels:
 
-    def __init__(self, side: Side):
-        
-        # price levels should be agnostic to its nature
-        # implement a tree to enforce this
-        # now we use a hash map => necessary to specify side to return top of book or 
-        # know how to inspect orders when matching orders
-        # using a hashmap creates confusions and complexity in implementation
-        
-        self.side = side
-        self.levels_ordered = list()
-        self.levels = dict()
+    def __init__(self):
+        self.levels = SortedDict()
     
     def is_empty(self) -> bool:
-        return not bool(self.levels_ordered)
+        return not bool(self.levels)
 
     def post_order(self, order: LimitOrder ) -> None:
 
-        if not order.limit_price in self.levels_ordered:
+        if not order.limit_price in self.levels:
             self.levels[order.limit_price] = OrdersQueue()
-            self.levels_ordered.append(order.limit_price)
-            self.levels_ordered.sort(reverse = (self.side == Side.BID))
 
         self.levels[order.limit_price].add_order(order)
 
-    # pass price & id ? or order obj
-    def cancel_order(self, order: LimitOrder) -> None:
-        try:
-            self.levels[order.limit_price].remove_order(order.id)
-            if self.is_level_empty(order.limit_price):
-                self._delete_level(order.limit_price)
-            
-        except:
-            print('error cancelling order')
-
-    def _delete_level(self, price: float):
-        self.levels_ordered.remove(price)
-        del self.levels[price]
+    def get_best_price(self) -> float:
+        pass
     
+    def get_top_of_book(self) -> OrdersQueue:
+        pass
+
     def is_level_empty(self, price):
         return self.levels[price].is_empty()
+    
+    def delete_level(self, price: float):
+        del self.levels[price]
+    
+class Bids(PriceLevels):
+
+    def __init__(self):
+        super().__init__()
 
     def get_best_price(self) -> float:
-        return self.levels_ordered[0]
-
-    def get_top_of_book(self) -> OrdersQueue:
-
-        best_price = self.get_best_price()
-        return self.levels[best_price]
+        return self.levels.keys()[-1]
     
-    def match_order(self, order) -> list[Order]:
-        top_of_book = self.get_top_of_book()
-        filled_orders = top_of_book.match_order(order)
+    def get_top_of_book(self) -> OrdersQueue:
+        return self.levels.values()[-1]
 
-        best_price = self.get_best_price()
-        if self.is_level_empty(best_price):
-            self._delete_level(best_price)
+class Asks(PriceLevels):
 
-        return filled_orders
+    def __init__(self):
+        super().__init__()
+
+    def get_best_price(self) -> float:
+        return self.levels.keys()[0]
+    
+    def get_top_of_book(self) -> OrdersQueue:
+        return self.levels.values()[0]

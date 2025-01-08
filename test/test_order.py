@@ -5,12 +5,10 @@ import sys
 # fix import system accross package
 # seems like test_order called first, appends src to path then subsequent test modules can test src
 # individual test module will fail import otherwise
-
-sys.path.append('../')
 sys.path.append('src')
 
-from src.order import Order, MarketOrder, LimitOrder, OrderParameters, OrderID
-from src.custom_types import ExecutionRules, OrderType, Side
+from order import Order, MarketOrder, LimitOrder, OrderParameters, OrderID
+from custom_types import ExecutionRules, OrderType, Side
 
 class TestOrder(unittest.TestCase):
 
@@ -49,3 +47,6 @@ class TestOrder(unittest.TestCase):
         gtc_order.fill_quantity(to_fill )
         self.assertEqual(gtc_order.remaining_quantity, 0)
         self.assertEqual(gtc_order.is_filled(), True)
+
+if __name__ == '__main__':
+    unittest.main()
