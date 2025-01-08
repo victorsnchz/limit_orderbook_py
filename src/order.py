@@ -1,66 +1,62 @@
-import dataclasses
-from custom_types import OrderType, BookSide, OrderExecutionRules
+from dataclasses import dataclass
+from custom_types import ExecutionRules, Side
 import datetime
+    
+@dataclass(frozen = True)
+class OrderParameters:
 
-@dataclasses.dataclass(frozen=True)
-class Order:
-
-    side: BookSide
-    type: OrderType
-    execution_rules: OrderExecutionRules
+    side: Side
     initial_quantity: float | int
-    price: float | int
 
+@dataclass(frozen = True)
+class OrderID:
+
+    userId: int
 
     def __post_init__(self):
-        object.__setattr__(self, 'remaining_quantity', self.initial_quantity)
+
         object.__setattr__(self, 'creation_time', datetime.datetime.now())
 
-        id_from_creation_date = str(hash(f'{self.creation_time}'))[1:8]
-        object.__setattr__(self, 'id', id_from_creation_date)
+        id_as_hash = str(hash(f'{self.creation_time}'))[1:8]
+        object.__setattr__(self, 'order_id', id_as_hash)
+    
+class Order:
+
+    def __init__(self, parameters: OrderParameters, id: OrderID):
+        
+        self._parameters: OrderParameters = parameters
+        self.id: OrderID = id
+
+        self.remaining_quantity = self._parameters.initial_quantity
 
     def fill_quantity(self, quantity_to_fill: float) -> None:
-
         to_fill = min(self.remaining_quantity, quantity_to_fill)
-        object.__setattr__(self, 'remaining_quantity', self.remaining_quantity - to_fill)
+        self.remaining_quantity -= to_fill
 
     def is_filled(self) -> bool:
         return self.remaining_quantity == 0
     
-@dataclasses.dataclass(frozen=True)
-class LimitOrder:
-
-    order: Order
+    def get_side(self) -> Side:
+        return self._parameters.side
     
-    def fill_quantity(self, quantity_to_fill) -> None:
-        self.order.fill_quantity(quantity_to_fill)
-        
-    def is_filled(self) -> bool:
-        return self.order.is_filled()
-        
-@dataclasses.dataclass(frozen=True)
-class MarketOrder:
-
-    order: Order
-
-    def fill_quantity(self, quantity_to_fill) -> None:
-        self.order.fill_quantity(quantity_to_fill)
-        
-    def is_filled(self) -> bool:
-        return self.order.is_filled()
-
-
-class OrderFactory:
-
-    orders = {
-        OrderType.LIMIT: LimitOrder,
-        OrderType.MARKET: MarketOrder
-    }
+    def get_initial_quantity(self) -> int | float:
+        return self._parameters.initial_quantity
     
-    def create_order(self, order_type: OrderType,
-                     side: BookSide, execution_rules: OrderExecutionRules,
-                     initial_quantity: float, price: float):
+    def get_id(self) -> int:
+        return self.id.order_id
 
-        new_order = Order(side, execution_rules, initial_quantity, price)
+class MarketOrder(Order):
+    
+    def __init__(self, parameters: OrderParameters, id: OrderID):
+        super().__init__(parameters, id)
+          
+class LimitOrder(Order):
 
-        return self.orders[order_type](new_order)
+    def __init__(self, parameters: OrderParameters, id: OrderID,
+                limit_price: float, execution_rules: ExecutionRules):
+        super().__init__(parameters, id)
+
+        self.limit_price = limit_price
+        self.execution_rules = execution_rules
+
+    
