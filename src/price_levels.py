@@ -37,7 +37,24 @@ class PriceLevels:
     
     def delete_level(self, price: float):
         del self.levels[price]
-    
+
+    def get_price_levels_state(self) -> dict[float, tuple[float, int]]:
+
+        levels_info = {}
+
+        for price_level, queue in self.levels.items():
+            total_volume = 0
+            participants = set()
+
+            for order in queue.queue.values():
+                participants.add(order.id.user_id)
+                total_volume += order.remaining_quantity
+
+            levels_info[price_level] = (total_volume, len(participants))
+
+        return levels_info
+
+
 class Bids(PriceLevels):
 
     def __init__(self):
