@@ -28,5 +28,16 @@ class OrderBook:
             return self.bids
         
         raise TypeError(f'invalid type {type(side)}, must be of type Side')
+    
+    def get_bid_ask_mid(self) -> tuple[float, float, float]:
+        if not self.bids.is_empty() and not self.asks.is_empty():
+            top_bid = self.bids.get_best_price()
+            top_ask = self.asks.get_best_price()
+        else:
+            raise RuntimeError('Must have orders in orderbook in order to plot prices')
+        
+        mid = .5 * (top_bid + top_ask)
+
+        return top_bid, top_ask, mid
 
     
