@@ -11,7 +11,7 @@ class OrderParameters:
 @dataclass(frozen = True)
 class OrderID:
 
-    userId: int
+    user_id: int
 
     def __post_init__(self):
 
