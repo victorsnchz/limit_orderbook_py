@@ -68,6 +68,52 @@ class TestPriceLevels(unittest.TestCase):
 
         self.assertDictEqual(bids_state, target)
 
+    def test_get_top_of_book_state_bids(self):
+
+        bids = Bids()
+        
+        bid1 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
+        bid2 = LimitOrder(OrderParameters(Side.BID, 200), OrderID(1),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
+        bid3 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
+                               limit_price=105, execution_rules = ExecutionRules.GTC)
+
+        
+        bids.post_order(bid1)
+        bids.post_order(bid2)
+        bids.post_order(bid3)
+
+        
+        bids_state = bids.get_top_of_book_state()
+
+        target = {105: (100, 1)}
+
+        self.assertDictEqual(bids_state, target)
+
+    def test_get_top_of_book_state_asks(self):
+
+        asks = Asks()
+        
+        ask1 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(0),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
+        ask2 = LimitOrder(OrderParameters(Side.ASK, 200), OrderID(1),
+                               limit_price=100, execution_rules = ExecutionRules.GTC)
+        ask3 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(0),
+                               limit_price=105, execution_rules = ExecutionRules.GTC)
+
+        
+        asks.post_order(ask1)
+        asks.post_order(ask2)
+        asks.post_order(ask3)
+
+        
+        asks_state = asks.get_top_of_book_state()
+
+        target = {100: (300, 2)}
+
+        self.assertDictEqual(asks_state, target)
+
 
 if __name__ == '__main__':
     unittest.main()

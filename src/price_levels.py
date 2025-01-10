@@ -58,7 +58,7 @@ class PriceLevels:
         best_price = self.get_best_price()
         top_of_book = self.get_top_of_book()
 
-        total_volume = []
+        total_volume = 0
         participants = set()
 
 
@@ -67,7 +67,6 @@ class PriceLevels:
             participants.add(order.id.user_id)
 
         return {best_price: (total_volume, len(participants))}
-
 
 class Bids(PriceLevels):
 
@@ -79,7 +78,6 @@ class Bids(PriceLevels):
     
     def get_top_of_book(self) -> OrdersQueue:
         return self.levels.values()[-1]
-
 
 class Asks(PriceLevels):
 
