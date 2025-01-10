@@ -53,6 +53,20 @@ class PriceLevels:
             levels_info[price_level] = (total_volume, len(participants))
 
         return levels_info
+    
+    def get_top_of_book_state(self) -> None:
+        best_price = self.get_best_price()
+        top_of_book = self.get_top_of_book()
+
+        total_volume = []
+        participants = set()
+
+
+        for order in top_of_book.queue.values():
+            total_volume += order.remaining_quantity
+            participants.add(order.id.user_id)
+
+        return {best_price: (total_volume, len(participants))}
 
 
 class Bids(PriceLevels):
@@ -65,6 +79,7 @@ class Bids(PriceLevels):
     
     def get_top_of_book(self) -> OrdersQueue:
         return self.levels.values()[-1]
+
 
 class Asks(PriceLevels):
 
