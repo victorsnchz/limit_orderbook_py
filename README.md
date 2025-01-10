@@ -1,27 +1,28 @@
 # limit_orderbook_py
-Python implementation of a limit orderbook data structure.
+Python implementation of a limit orderbook data structure, with continuous execution.
 
 Why?
 This project is not intended for any practical use case.
 The aim is 
-- to provide reader with a snapshot of my Python knowledge
-- provide a snapshot of my knowledge in data-structures, algorithms, design patterns
-- better understand the mechanics of an orderbook before implementing it in C/C++ (in which case a practical application could be considered for futher more interesting projects)
+- to provide reader with a snapshot of my Python knowledge.
+- provide a snapshot of my knowledge in data-structures, algorithms, design patterns.
+- better understand the mechanics of an orderbook before implementing it in C/C++ (in which case a practical application could be considered for futher more interesting projects).
 
 
 Project discussion
 
-Design patterns
+Design patterns (to be implemented)
 - Factory for orders: create objects of unique type, subtype decided by user, instantiation taken care of via decicated factory-function.
+- Factory for OrderExecution: given an order (eg market vs limit) instantiate the right execution algorithm.
 
 Data structures used
-- hashmap and list for orderbook price levels -> will be replaced by self-rebalancing tree: more elegant, fast access to any level O(logn), O(1) access to top of book
+- SortedDict for orderbook price levels -> O(1) access to any price level, especially O(1) access to top of book
 - OrderedDict for order queues at given level: dedicated method for FIFO queues + clear functionality intent (Python base dict now ordered, but using OrderedDict makes it obvious)
 - custom data structures for orders, orderbook
 
 Algorithms
 - FIFO order queues
-- main order types and execution rules (limit/market, fill-or-kill/good-till-cancelled, iceberg/hidden/public)
+- main order types and execution rules (limit/market, fill-or-kill/good-till-cancelled)
 
 Design choices
 - Most classes implemented as dataclasses with frozen=True even though their values can evolve. Yes this is a bit 'hacky', idea was to enforce permanence of the object structure and its most important features (an order once created will only see changes in quantity filled, an orderbook will always have 2 sides bid/ask...). Gives a good idea of which constraints will need to be applied with a strict type language for a more robust implementation.
