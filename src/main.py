@@ -28,7 +28,7 @@ def main():
         exec.execute()
 
     saver = Saver()
-    saver.orderbook_state_to_csv(orderbook)
+    saver.orderbook_state_to_csv(orderbook, path = 'results')
 
     saver.top_of_book_state_to_csv(orderbook)
 
