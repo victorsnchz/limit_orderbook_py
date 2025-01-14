@@ -41,7 +41,7 @@ class Saver:
     def top_of_book_state_to_csv(self, orderbook: OrderBook, path: str = 'top_of_book_states') -> None:        
 
         date = datetime.datetime.now().date().strftime('%Y_%m_%d')
-        dir = f'{self._master_directory}/{path}/{date}'
+        dir = f'{self._master_directory}/{path}/{date}' if path else f'{self._master_directory}/{date}'
         
         if not os.path.exists(dir):
             os.makedirs(dir)
