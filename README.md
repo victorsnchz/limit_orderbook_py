@@ -11,6 +11,12 @@ The aim is
 
 Project discussion
 
+Coding paradigms and possible debates
+- functions: I do not adhere to the 'minimize-function-length-clean-code-paradigm' ( AKA functions should be AT MOST 2-4 lines).
+  functions should adhere to SRP but splitting anything beyond 4 lines into 2 functions makes it harder (to me) to read code and keep
+  context in mind while jumping around files trying understand which function does what. I prefer longer (SRP) functions where as
+  many instructions as possible are located at the same place on my screen.
+
 Design patterns (to be implemented)
 - Factory for orders: create objects of unique type, subtype decided by user, instantiation taken care of via decicated factory-function.
 - Factory for OrderExecution: given an order (eg market vs limit) instantiate the right execution algorithm.
