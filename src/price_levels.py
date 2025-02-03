@@ -54,7 +54,7 @@ class PriceLevels:
 
         return levels_info
     
-    def get_top_of_book_state(self) -> None:
+    def get_top_of_book_state(self) -> dict[float, tuple[int, int]]:
         best_price = self.get_best_price()
         top_of_book = self.get_top_of_book()
 
