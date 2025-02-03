@@ -15,12 +15,8 @@ from analytics import Analytics
 from orderbook import OrderBook
 from saver import Saver
 
-import pathlib
-
 import shutil
-
 import helper
-
 
 test_saver_data_dir = 'test_data/test_saver'
 
@@ -49,7 +45,7 @@ class TestSaverBookState(unittest.TestCase):
         results_data_directory = f'{self.test_data_directory}/one_state/results'
         targets_data_directory = f'{self.test_data_directory}/one_state/targets'
         
-        saver = Saver(master_directory=results_data_directory)
+        saver = Saver(data_directory=results_data_directory)
         saver.orderbook_state_to_csv(orderbook, path = None)
 
         date = datetime.datetime.now().date().strftime('%Y_%m_%d')
@@ -94,7 +90,7 @@ class TestSaverBookState(unittest.TestCase):
         results_data_directory = f'{self.test_data_directory}/multiple_states/results'
         targets_data_directory = f'{self.test_data_directory}/multiple_states/targets'
         
-        saver = Saver(master_directory=results_data_directory)
+        saver = Saver(data_directory=results_data_directory)
         saver.orderbook_state_to_csv(orderbook, path = None)
 
         date = datetime.datetime.now().date().strftime('%Y_%m_%d')
@@ -138,7 +134,7 @@ class TestSaverTopOfBook(unittest.TestCase):
         results_data_directory = f'{self.test_data_directory}/one_state/results'
         targets_data_directory = f'{self.test_data_directory}/one_state/targets'
         
-        saver = Saver(master_directory=results_data_directory)
+        saver = Saver(data_directory=results_data_directory)
         saver.top_of_book_state_to_csv(orderbook, path = None)
 
         date = datetime.datetime.now().date().strftime('%Y_%m_%d')
@@ -183,7 +179,7 @@ class TestSaverTopOfBook(unittest.TestCase):
         results_data_directory = f'{self.test_data_directory}/multiple_states/results'
         targets_data_directory = f'{self.test_data_directory}/multiple_states/targets'
         
-        saver = Saver(master_directory=results_data_directory)
+        saver = Saver(data_directory=results_data_directory)
         saver.top_of_book_state_to_csv(orderbook, path = None)
 
         date = datetime.datetime.now().date().strftime('%Y_%m_%d')
