@@ -49,9 +49,9 @@ class OrderBook:
     
     def get_top_of_book_state(self) -> tuple[dict, dict]:
 
-        bids_tob_state = self.bids.get_top_of_book_state()
-        asks_tob_state = self.asks.get_top_of_book_state()
+        bids_top_state = self.bids.get_top_of_book_state()
+        asks_top_state = self.asks.get_top_of_book_state()
 
-        return bids_tob_state, asks_tob_state
+        return bids_top_state, asks_top_state
     
     
