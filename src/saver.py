@@ -8,7 +8,7 @@ import csv
 
 class Saver:
 
-    def __init__(self, data_directory: str = f'../data/'):
+    def __init__(self, data_directory: str = f'../data'):
         
         self._data_directory = data_directory
         self.date = datetime.datetime.today()
