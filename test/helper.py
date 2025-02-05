@@ -2,6 +2,29 @@ import csv
 import pathlib
 import os
 
+import datetime
+
+def get_results_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> tuple[str, str]:
+    
+    timestamp = datetime.datetime.now().time().strftime('%H_%M_%S')
+
+    results_data_directory = f'{data_dir}/{test_case}/{test_name}/results'
+
+    bid = f'{results_data_directory}/bid_{timestamp}'
+    ask = f'{results_data_directory}/ask_{timestamp}'
+
+    return bid, ask
+
+def get_target_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> tuple[str, str]:
+    
+    targets_data_directory = f'{data_dir}/{test_case}/{test_name}/targets'
+
+    bid = f'{targets_data_directory}/bid'
+    ask = f'{targets_data_directory}/ask'
+
+    return bid, ask
+
+
 def read_csv_file(target_dir: str, file_name: str):
 
     path = f'{target_dir}/{file_name}/'
@@ -14,7 +37,7 @@ def read_csv_file(target_dir: str, file_name: str):
 
 def read_two_csvs(csv_file_A: str, csv_file_B: str, strict = True):
 
-    with open(f'{csv_file_A}.csv') as csv_A, open(f'{csv_file_B}.csv') as csv_B:
+    with open(csv_file_A) as csv_A, open(csv_file_B) as csv_B:
         
         reader_A = csv.reader(csv_A)
         reader_B = csv.reader(csv_B)
