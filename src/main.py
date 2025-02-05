@@ -4,6 +4,7 @@ from custom_types import Side, ExecutionRules, OrderType
 from price_levels import Bids, Asks
 from order_execution import LimitOrderExecution
 from saver import Saver
+from visuals import Visuals
 
 def main():
 
@@ -28,7 +29,10 @@ def main():
         exec.execute()
 
     saver = Saver()
-    saver.orderbook_state_to_csv(orderbook, path = 'results')
+    saver.top_of_book_state_to_csv(orderbook)
+    saver.orderbook_state_to_csv(orderbook)
+    visualizer = Visuals()
+    visualizer.depth_chart()
 
     saver.top_of_book_state_to_csv(orderbook)
 
