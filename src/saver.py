@@ -9,11 +9,15 @@ import pathlib
 
 class Saver:
 
-    def __init__(self, data_directory: str = '../data'):
+    def __init__(self, data_directory: str = None):
         
-        self._data_directory = data_directory
-        self._current = pathlib.Path(__file__).parent.absolute()
-        self.date = datetime.datetime.today()
+        if data_directory is None:
+            self._data_directory = f'{os.path.abspath(os.path.dirname(__file__))}/..'
+
+        else:
+            self._data_directory = data_directory
+
+        self.now = datetime.datetime.now()
 
     def order_to_csv(self, order: Order, path: str = None) -> None:
         
@@ -21,7 +25,7 @@ class Saver:
 
     def orderbook_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:        
 
-        date = datetime.datetime.now().date().strftime('%Y_%m_%d')
+        date = self.now.date().strftime('%Y_%m_%d')
         
         if path is None:
             orderbook_state_dir = f'{self._data_directory}/orderbook_state_dir/{date}' 
@@ -32,7 +36,8 @@ class Saver:
             os.makedirs(orderbook_state_dir)
 
         bids_state, asks_state = orderbook.get_orderbook_state()
-        timestamp = datetime.datetime.now().time().strftime('%H_%M_%S')
+
+        timestamp = self.now.time().strftime('%H_%M_%S')
 
         with open(f'{orderbook_state_dir}/bid_{timestamp}.csv', 'w') as csv_file:
             
@@ -46,7 +51,7 @@ class Saver:
 
     def top_of_book_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:        
 
-        date = datetime.datetime.now().date().strftime('%Y_%m_%d')
+        date = self.now.date().strftime('%Y_%m_%d')
 
         if path is None:
             top_of_book_states_dir = f'{self._data_directory}/top_of_book_states/{date}' 
@@ -57,7 +62,8 @@ class Saver:
             os.makedirs(top_of_book_states_dir)
 
         top_bid_state, top_ask_state = orderbook.get_top_of_book_state()
-        timestamp = datetime.datetime.now().time().strftime('%H_%M_%S')
+        timestamp = self.now.time().strftime('%H_%M_%S')
+
         with open(f'{top_of_book_states_dir}/bid_{timestamp}.csv', 'w') as csv_file:
             
             writer = csv.writer(csv_file)
