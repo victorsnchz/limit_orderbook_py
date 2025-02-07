@@ -5,6 +5,7 @@ from price_levels import Bids, Asks
 from order_execution import LimitOrderExecution
 from saver import Saver
 from visuals import Visuals
+import order_generator
 
 def main():
 
@@ -22,19 +23,20 @@ def main():
     ask2 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(3),
                             limit_price=120, execution_rules = ExecutionRules.GTC)
 
-    orders = [bid1, bid2, bid3, ask1, ask2]
+    bids, asks = order_generator.generate()
+    orders = bids + asks
 
     for order in orders:
         exec = LimitOrderExecution(order, orderbook)
         exec.execute()
 
-    saver = Saver()
-    saver.top_of_book_state_to_csv(orderbook)
-    saver.orderbook_state_to_csv(orderbook)
-    visualizer = Visuals()
-    visualizer.depth_chart()
 
-    saver.top_of_book_state_to_csv(orderbook)
+    bid_vol, ask_vol = orderbook.get_volumes()
+
+
+    visuals = Visuals()
+
+    visuals.depth_chart(bid_vol, ask_vol)
 
 if __name__ == '__main__':
     main()

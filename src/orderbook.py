@@ -54,4 +54,8 @@ class OrderBook:
 
         return bids_top_state, asks_top_state
     
-    
+    def get_volumes(self) -> tuple[dict[float, int], dict[float, int]]:
+
+        bid_volumes, ask_volumes = self.bids.get_volumes(), self.asks.get_volumes()
+
+        return bid_volumes, ask_volumes
