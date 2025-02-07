@@ -68,16 +68,31 @@ class PriceLevels:
 
         return {best_price: (total_volume, len(participants))}
 
-class Bids(PriceLevels):
+    def get_volumes(self) -> dict[float, int]:
 
-    def __init__(self):
-        super().__init__()
+        volumes = SortedDict()
+
+        for price, queue in self.levels.items():
+            volume = 0
+
+            for order in queue.queue.values():
+                volume += order.remaining_quantity
+        
+            volumes[price] = volume
+        
+        return volumes
+
+class Bids(PriceLevels):
 
     def get_best_price(self) -> float:
         return self.levels.keys()[-1]
     
     def get_top_of_book(self) -> OrdersQueue:
         return self.levels.values()[-1]
+    
+    def get_volumes(self):
+        volumes = super().get_volumes()
+        return dict(reversed(volumes.items()))
 
 class Asks(PriceLevels):
 
