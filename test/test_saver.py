@@ -16,7 +16,7 @@ from orderbook import OrderBook
 from saver import Saver
 
 import shutil
-import helper
+import files_manager
 
 
 test_saver_data_dir = f'{os.path.abspath(os.path.dirname(__file__))}/../test_data/test_saver'
@@ -45,13 +45,13 @@ class TestSaverBookState(unittest.TestCase):
         test_dir = 'one_state'
         saver.orderbook_state_to_csv(orderbook, path = f'{self.test_case_dir}/{test_dir}/results')
 
-        target_bid, target_ask = helper.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-        result_bid, result_ask = helper.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
+        target_bid, target_ask = files_manager.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
+        result_bid, result_ask = files_manager.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
 
-        for target_bid_state, results_bid_state in helper.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
+        for target_bid_state, results_bid_state in files_manager.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
             self.assertEqual(target_bid_state, results_bid_state)
 
-        for target_ask_state, results_ask_state in helper.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
+        for target_ask_state, results_ask_state in files_manager.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
             self.assertEqual(target_ask_state, results_ask_state)
 
         shutil.rmtree(f'{test_saver_data_dir}/{self.test_case_dir}/{test_dir}/results')
@@ -82,13 +82,13 @@ class TestSaverBookState(unittest.TestCase):
         test_dir = 'multiple_states'
         saver.orderbook_state_to_csv(orderbook, path = f'{self.test_case_dir}/{test_dir}/results')
 
-        target_bid, target_ask = helper.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-        result_bid, result_ask = helper.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
+        target_bid, target_ask = files_manager.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
+        result_bid, result_ask = files_manager.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
 
-        for target_bid_state, results_bid_state in helper.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
+        for target_bid_state, results_bid_state in files_manager.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
             self.assertEqual(target_bid_state, results_bid_state)
 
-        for target_ask_state, results_ask_state in helper.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
+        for target_ask_state, results_ask_state in files_manager.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
             self.assertEqual(target_ask_state, results_ask_state)
 
         shutil.rmtree(f'{test_saver_data_dir}/{self.test_case_dir}/{test_dir}/results')
@@ -116,13 +116,13 @@ class TestSaverTopOfBookState(unittest.TestCase):
         test_dir = 'one_state'
         saver.top_of_book_state_to_csv(orderbook, path = f'{self.test_case_dir}/{test_dir}/results')
 
-        target_bid, target_ask = helper.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-        result_bid, result_ask = helper.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
+        target_bid, target_ask = files_manager.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
+        result_bid, result_ask = files_manager.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
 
-        for target_bid_state, results_bid_state in helper.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
+        for target_bid_state, results_bid_state in files_manager.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
             self.assertEqual(target_bid_state, results_bid_state)
 
-        for target_ask_state, results_ask_state in helper.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
+        for target_ask_state, results_ask_state in files_manager.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
             self.assertEqual(target_ask_state, results_ask_state)
 
         shutil.rmtree(f'{test_saver_data_dir}/{self.test_case_dir}/{test_dir}/results')
@@ -152,13 +152,13 @@ class TestSaverTopOfBookState(unittest.TestCase):
         test_dir = 'multiple_states'
         saver.top_of_book_state_to_csv(orderbook, path = f'{self.test_case_dir}/{test_dir}/results')
 
-        target_bid, target_ask = helper.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-        result_bid, result_ask = helper.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
+        target_bid, target_ask = files_manager.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
+        result_bid, result_ask = files_manager.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
 
-        for target_bid_state, results_bid_state in helper.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
+        for target_bid_state, results_bid_state in files_manager.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
             self.assertEqual(target_bid_state, results_bid_state)
 
-        for target_ask_state, results_ask_state in helper.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
+        for target_ask_state, results_ask_state in files_manager.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
             self.assertEqual(target_ask_state, results_ask_state)
 
         shutil.rmtree(f'{test_saver_data_dir}/{self.test_case_dir}/{test_dir}/results')
