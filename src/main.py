@@ -17,7 +17,7 @@ def main():
             exec = LimitOrderExecution(order, orderbook)
             exec.execute()
 
-        depth_chart.update_orderbook(orderbook)
+        depth_chart._update_orderbook(orderbook)
             
         time.sleep(.5)
 
