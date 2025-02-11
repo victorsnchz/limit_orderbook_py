@@ -28,6 +28,9 @@ class DepthChart(Visuals):
         self._bids, self._asks = self._orderbook.get_volumes()
 
     def _update(self, frame):
+        """
+        Update depth chart.
+        """
 
         self._update_volumes()
 

@@ -19,6 +19,9 @@ class Visuals:
         self._orderbook = orderbook
 
     def _update(self) -> None:
+        """
+        Update plot.
+        """
         pass
 
     def snapshot(self) -> None:

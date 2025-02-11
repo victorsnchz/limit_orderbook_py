@@ -128,7 +128,12 @@ class MarketOrderExecution(OrderExecution):
     def execute(self):
         self.match_order()
 
-    def match_order(self):
+    def match_order(self) -> None:
+
+        """
+        Match order against top-of-book opposite side order if possible. Delete opposite top-of-book if empty.
+        """
+
         filled_orders = []
 
         opposite_price_levels = self.get_opposite_book_level()
