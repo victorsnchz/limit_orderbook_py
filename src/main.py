@@ -1,3 +1,5 @@
+import matplotlib.animation
+import matplotlib.pyplot
 from order import Order, LimitOrder, MarketOrder, OrderID, OrderParameters
 from orderbook import OrderBook
 from custom_types import Side, ExecutionRules, OrderType
@@ -6,37 +8,35 @@ from order_execution import LimitOrderExecution
 from saver import Saver
 from visuals import Visuals
 import order_generator
+import matplotlib
+import time
+import functools
+import threading
+
+from depth_chart import DepthChart
 
 def main():
 
-    orderbook = OrderBook()
+    while(1):
 
-    bid1 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                            limit_price=100, execution_rules = ExecutionRules.GTC)
-    bid2 = LimitOrder(OrderParameters(Side.BID, 200), OrderID(1),
-                            limit_price=100, execution_rules = ExecutionRules.GTC)
-    bid3 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                            limit_price=105, execution_rules = ExecutionRules.GTC)
+        bids, asks = order_generator.generate()
+        orders = bids + asks
 
-    ask1 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(2),
-                            limit_price=110, execution_rules = ExecutionRules.GTC)
-    ask2 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(3),
-                            limit_price=120, execution_rules = ExecutionRules.GTC)
+        for order in orders:
+            exec = LimitOrderExecution(order, orderbook)
+            exec.execute()
 
-    bids, asks = order_generator.generate()
-    orders = bids + asks
-
-    for order in orders:
-        exec = LimitOrderExecution(order, orderbook)
-        exec.execute()
+            bids_volumes, asks_volumes = orderbook.get_volumes()
+            depth_chart.update_order_book(bids_volumes, asks_volumes)
+            
+        time.sleep(.5)
 
 
-    bid_vol, ask_vol = orderbook.get_volumes()
 
-
-    visuals = Visuals()
-
-    visuals.depth_chart(bid_vol, ask_vol)
-
+    
 if __name__ == '__main__':
-    main()
+    orderbook = OrderBook()
+    depth_chart = DepthChart()
+
+    threading.Thread(target = main, daemon=True).start()
+    depth_chart.animate()

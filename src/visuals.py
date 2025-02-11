@@ -17,7 +17,7 @@ class Visuals:
         bid_prices = [price for price in bids.keys()]
         ask_prices = [price for price in asks.keys()]
 
-        plt.figure(figsize=(10, 5))
+        #plt.figure(figsize=(10, 5))
         plt.step(bid_prices, cumulative_bid_volumes, label = 'bids', color = 'green', where = 'post')
         plt.step(ask_prices, cumulative_ask_volumes, label = 'asks', color = 'red', where = 'post')
         
@@ -30,6 +30,7 @@ class Visuals:
         plt.legend()
         plt.grid()
         plt.show()
+        
 
 
     def ladder_view(self):
