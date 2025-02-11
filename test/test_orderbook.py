@@ -3,11 +3,11 @@ import sys
 
 sys.path.append('src')
 
-from orderbook import OrderBook
-from order import Order, LimitOrder, OrderID, OrderParameters
-from custom_types import OrderType, Side, ExecutionRules
-from price_levels import Bids, Asks
-from order_execution import LimitOrderExecution
+from orderbook.orderbook import OrderBook
+from orders.order import Order, LimitOrder, OrderID, OrderParameters
+from bookkeeping.custom_types import OrderType, Side, ExecutionRules
+from orderbook.price_levels import Bids, Asks
+from orderbook.order_execution import LimitOrderExecution
 
 # blend of unit-testing and integration testing
 

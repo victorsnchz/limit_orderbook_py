@@ -1,14 +1,18 @@
-from order import Order, MarketOrder, LimitOrder
-from orderbook import OrderBook
-from price_levels import PriceLevels
-from custom_types import Side
-from orders_queue import OrdersQueue
-from filled_order import FilledOrder
+from orders.order import Order, MarketOrder, LimitOrder
+from orderbook.orderbook import OrderBook
+from orderbook.price_levels import PriceLevels
+from bookkeeping.custom_types import Side
+from orderbook.orders_queue import OrdersQueue
+from orders.filled_order import FilledOrder
 
 # TODO
 # factory to choose execution based on order type
 
 class OrderExecution:
+
+    """
+    Parent class for order execution.
+    """
 
     def __init__(self, order: Order, orderbook: OrderBook):
         self.order = order
@@ -47,6 +51,11 @@ class OrderExecution:
         pass
 
 class LimitOrderExecution(OrderExecution):
+
+    """
+    Execute limit orders in order book.
+    If possible will match order against opposite side orders.. Remaining will be posted in book.
+    """
 
     def __init__(self, order: LimitOrder, orderbook):
         super().__init__(order, orderbook)
@@ -98,6 +107,11 @@ class LimitOrderExecution(OrderExecution):
 
 class MarketOrderExecution(OrderExecution):
 
+    """
+    Execute market orders in order book.
+    If possible will match order against opposite side.
+    """
+
     def __init__(self, order: MarketOrder, orderbook):
         super().__init__(order, orderbook)
 
@@ -114,7 +128,12 @@ class MarketOrderExecution(OrderExecution):
     def execute(self):
         self.match_order()
 
-    def match_order(self):
+    def match_order(self) -> None:
+
+        """
+        Match order against top-of-book opposite side order if possible. Delete opposite top-of-book if empty.
+        """
+
         filled_orders = []
 
         opposite_price_levels = self.get_opposite_book_level()

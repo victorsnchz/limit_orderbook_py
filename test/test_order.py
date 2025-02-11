@@ -7,8 +7,8 @@ import sys
 # individual test module will fail import otherwise
 sys.path.append('src')
 
-from order import Order, MarketOrder, LimitOrder, OrderParameters, OrderID
-from custom_types import ExecutionRules, OrderType, Side
+from orders.order import Order, MarketOrder, LimitOrder, OrderParameters, OrderID
+from bookkeeping.custom_types import ExecutionRules, OrderType, Side
 
 class TestOrder(unittest.TestCase):
 
