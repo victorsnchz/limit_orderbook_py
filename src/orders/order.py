@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from custom_types import ExecutionRules, Side
+from bookkeeping.custom_types import ExecutionRules, Side
 import datetime
     
 @dataclass(frozen = True)
@@ -11,6 +11,10 @@ class OrderParameters:
 @dataclass(frozen = True)
 class OrderID:
 
+    """
+    Store user and order information.
+    """
+
     user_id: int
 
     def __post_init__(self):
@@ -21,6 +25,10 @@ class OrderID:
         object.__setattr__(self, 'order_id', id_as_hash)
     
 class Order:
+
+    """
+    Store order informations and any relevant order updates.
+    """
 
     def __init__(self, parameters: OrderParameters, id: OrderID):
         
@@ -46,11 +54,19 @@ class Order:
         return self.id.order_id
 
 class MarketOrder(Order):
+
+    """
+    Market orders matched against opposite side in book. Will not live in the book (not postable).
+    """
     
     def __init__(self, parameters: OrderParameters, id: OrderID):
         super().__init__(parameters, id)
           
 class LimitOrder(Order):
+
+    """
+    Limit orders matched against opposite side in book, remaining quantity will be posted.
+    """
 
     def __init__(self, parameters: OrderParameters, id: OrderID,
                 limit_price: float, execution_rules: ExecutionRules):

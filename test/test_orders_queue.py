@@ -3,9 +3,9 @@ import sys
 
 sys.path.append('src')
 
-from orders_queue import OrdersQueue
-from order import Order, LimitOrder, MarketOrder, OrderID, OrderParameters
-from custom_types import ExecutionRules, OrderType, Side
+from orderbook.orders_queue import OrdersQueue
+from orders.order import Order, LimitOrder, MarketOrder, OrderID, OrderParameters
+from bookkeeping.custom_types import ExecutionRules, OrderType, Side
 
 class  TestOrdersQueue(unittest.TestCase):
 

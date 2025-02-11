@@ -1,5 +1,5 @@
 import dataclasses
-from order import Order
+from orders.order import Order
 
 @dataclasses.dataclass(frozen=True)
 class FilledOrder:

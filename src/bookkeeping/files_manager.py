@@ -5,16 +5,29 @@ import datetime
 
 def get_last_modified_file(path: str):
 
+    """
+    Return last modified file in target directory.
+    """
+
     list_of_files = glob.glob(f'{path}')
     latest_file = max(list_of_files, key = os.path.getctime)
     return latest_file
 
 def write_dict_to_csv(writer: csv.writer, state_dict: dict):
+
+    """
+    Write dict line by line in csv file.
+    """
+
     for index, values in state_dict.items():
         data = [index] + list(values)
         writer.writerow(data)
 
 def get_results_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> tuple[str, str]:
+
+    """
+    Return name format for bid/ask where test results are stored.
+    """
     
     timestamp = datetime.datetime.now().time().strftime('%H_%M_%S')
 
@@ -26,6 +39,10 @@ def get_results_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> 
     return bid, ask
 
 def get_target_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> tuple[str, str]:
+
+    """
+    Return name format for bid/ask where test targets are stored.
+    """
     
     targets_data_directory = f'{data_dir}/{test_case}/{test_name}/targets'
 
@@ -36,6 +53,10 @@ def get_target_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> t
 
 def read_csv_file(target_dir: str, file_name: str):
 
+    """
+    Return csv file row-by-row.
+    """
+
     path = f'{target_dir}/{file_name}/'
 
     with open(f'{path}.csv', 'r') as csv_file:
@@ -44,6 +65,10 @@ def read_csv_file(target_dir: str, file_name: str):
             yield row
 
 def read_two_csvs(csv_file_A: str, csv_file_B: str, strict = True):
+
+    """
+    Return two-csv files row-by-row simultaneously.
+    """
 
     with open(csv_file_A) as csv_A, open(csv_file_B) as csv_B:
         

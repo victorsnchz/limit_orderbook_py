@@ -1,6 +1,6 @@
 import random
-from order import LimitOrder, OrderParameters, OrderID, ExecutionRules
-from custom_types import Side
+from orders.order import LimitOrder, OrderParameters, OrderID, ExecutionRules
+from bookkeeping.custom_types import Side
 
 def generate() -> tuple[list, list]:
 

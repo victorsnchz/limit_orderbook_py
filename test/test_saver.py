@@ -7,16 +7,15 @@ import csv
 #sys.path.append('../')
 sys.path.append('src')
 
-from price_levels import Bids
-from order import LimitOrder, OrderParameters, OrderID
-from custom_types import Side, ExecutionRules
-from order_execution import LimitOrderExecution
-from analytics import Analytics
-from orderbook import OrderBook
-from saver import Saver
+from orderbook.price_levels import Bids
+from orders.order import LimitOrder, OrderParameters, OrderID
+from bookkeeping.custom_types import Side, ExecutionRules
+from orderbook.order_execution import LimitOrderExecution
+from orderbook.orderbook import OrderBook
+from bookkeeping.saver import Saver
 
 import shutil
-import files_manager
+import bookkeeping.files_manager as files_manager
 
 
 test_saver_data_dir = f'{os.path.abspath(os.path.dirname(__file__))}/../test_data/test_saver'
