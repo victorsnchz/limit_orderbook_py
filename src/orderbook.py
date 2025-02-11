@@ -3,6 +3,11 @@ from price_levels import Bids, Asks
 
 class OrderBook:
 
+    """
+    Order book data structure: stores and returns orders.
+    Orders stores in bids and asks structures.
+    """
+
     def __init__(self):     
         
         self.bids = Bids()

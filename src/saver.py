@@ -8,6 +8,10 @@ import csv
 
 class Saver:
 
+    """
+    Save orderbook states in CSV files.
+    """
+
     def __init__(self, data_directory: str = None):
         
         if data_directory is None:

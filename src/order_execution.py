@@ -10,6 +10,10 @@ from filled_order import FilledOrder
 
 class OrderExecution:
 
+    """
+    Parent class for order execution.
+    """
+
     def __init__(self, order: Order, orderbook: OrderBook):
         self.order = order
         self.orderbook = orderbook
@@ -47,6 +51,11 @@ class OrderExecution:
         pass
 
 class LimitOrderExecution(OrderExecution):
+
+    """
+    Execute limit orders in order book.
+    If possible will match order against opposite side orders.. Remaining will be posted in book.
+    """
 
     def __init__(self, order: LimitOrder, orderbook):
         super().__init__(order, orderbook)
@@ -97,6 +106,11 @@ class LimitOrderExecution(OrderExecution):
         same_side_price_levels.post_order(self.order)
 
 class MarketOrderExecution(OrderExecution):
+
+    """
+    Execute market orders in order book.
+    If possible will match order against opposite side.
+    """
 
     def __init__(self, order: MarketOrder, orderbook):
         super().__init__(order, orderbook)

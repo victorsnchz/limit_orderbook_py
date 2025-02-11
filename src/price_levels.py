@@ -3,14 +3,13 @@ from order import LimitOrder
 
 from sortedcontainers import SortedDict
 
-# TODO
-# compare perf hashmap vs tree for both many and few elements
-# use rebalancing tree: more elegant, fast access to sorted layers, very fast access to unkown top of book layers
-# for now implement as a hashmap O(1) access to known price (assuming not too many prices so no collision)
-# but hard to keep track of which layers exist or not so access time will infine be slower
-
-
 class PriceLevels:
+
+    """
+    Store order queues in a tree map.
+    O(1) access to top of book (likely most accessed book layer).
+    O(nlogn) access to book levels.
+    """
 
     def __init__(self):
         self.levels = SortedDict()

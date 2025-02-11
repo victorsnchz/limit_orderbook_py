@@ -3,6 +3,12 @@ from order import Order
 
 class OrdersQueue:
 
+    """
+    Store orders in a queue at each price level.
+    FIFO.
+    Handle adding, removing, getting next order to match against.
+    """
+
     def __init__(self):
         # Python dicts preserve insertion order since 3.7 
         # OrderedDict redundqnt BUT clarifies purpose of this data struct
