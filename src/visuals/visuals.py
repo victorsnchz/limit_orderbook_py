@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 import matplotlib.animation as animation
-from orderbook import OrderBook
+from orderbook.orderbook import OrderBook
 
 class Visuals:
 

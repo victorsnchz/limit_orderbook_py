@@ -1,5 +1,5 @@
 import numpy as np
-from visuals import Visuals
+from visuals.visuals import Visuals
 
 class DepthChart(Visuals):
 

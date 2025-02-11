@@ -4,11 +4,11 @@ import sys
 #sys.path.append('../')
 sys.path.append('src')
 
-from order import Order, MarketOrder, LimitOrder, OrderParameters, OrderID
-from custom_types import ExecutionRules, OrderType, Side
-from order_execution import LimitOrderExecution, MarketOrderExecution
-from orderbook import OrderBook
-from order import LimitOrder
+from orders.order import Order, MarketOrder, LimitOrder, OrderParameters, OrderID
+from bookkeeping.custom_types import ExecutionRules, OrderType, Side
+from orderbook.order_execution import LimitOrderExecution, MarketOrderExecution
+from orderbook.orderbook import OrderBook
+from orders.order import LimitOrder
 
 class TestLimitOrderExecution(unittest.TestCase):
 

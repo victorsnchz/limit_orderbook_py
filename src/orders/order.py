@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from custom_types import ExecutionRules, Side
+from bookkeeping.custom_types import ExecutionRules, Side
 import datetime
     
 @dataclass(frozen = True)
