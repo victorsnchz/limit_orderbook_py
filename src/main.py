@@ -1,18 +1,9 @@
-import matplotlib.animation
-import matplotlib.pyplot
-from order import Order, LimitOrder, MarketOrder, OrderID, OrderParameters
-from orderbook import OrderBook
-from custom_types import Side, ExecutionRules, OrderType
-from price_levels import Bids, Asks
-from order_execution import LimitOrderExecution
-from saver import Saver
-from visuals import Visuals
 import order_generator
-import matplotlib
 import time
-import functools
 import threading
 
+from orderbook import OrderBook
+from order_execution import LimitOrderExecution
 from depth_chart import DepthChart
 
 def main():

@@ -5,7 +5,6 @@ from files_manager import write_dict_to_csv
 import os
 import datetime
 import csv
-import pathlib
 
 class Saver:
 

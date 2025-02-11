@@ -1,6 +1,5 @@
 from orders_queue import OrdersQueue
-from custom_types import Side
-from order import Order, LimitOrder
+from order import LimitOrder
 
 from sortedcontainers import SortedDict
 
