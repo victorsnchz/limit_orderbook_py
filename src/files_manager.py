@@ -3,7 +3,6 @@ import csv
 import glob
 import datetime
 
-
 def get_last_modified_file(path: str):
 
     list_of_files = glob.glob(f'{path}')
@@ -35,7 +34,6 @@ def get_target_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> t
 
     return bid, ask
 
-
 def read_csv_file(target_dir: str, file_name: str):
 
     path = f'{target_dir}/{file_name}/'
@@ -44,7 +42,6 @@ def read_csv_file(target_dir: str, file_name: str):
         reader = csv.reader(csv_file)
         for row in reader:
             yield row
-
 
 def read_two_csvs(csv_file_A: str, csv_file_B: str, strict = True):
 

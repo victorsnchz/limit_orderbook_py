@@ -58,5 +58,3 @@ class LimitOrder(Order):
 
         self.limit_price = limit_price
         self.execution_rules = execution_rules
-
-    
