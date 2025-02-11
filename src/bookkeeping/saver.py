@@ -1,7 +1,7 @@
-from order import Order
-from orderbook import OrderBook
+from orders.order import Order
+from orderbook.orderbook import OrderBook
 
-from files_manager import write_dict_to_csv
+from bookkeeping.files_manager import write_dict_to_csv
 import os
 import datetime
 import csv

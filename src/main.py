@@ -1,10 +1,10 @@
-import order_generator
+import orders.order_generator as order_generator
 import time
 import threading
 
-from orderbook import OrderBook
-from order_execution import LimitOrderExecution
-from depth_chart import DepthChart
+from orderbook.orderbook import OrderBook
+from orderbook.order_execution import LimitOrderExecution
+from visuals.depth_chart import DepthChart
 
 def main():
 

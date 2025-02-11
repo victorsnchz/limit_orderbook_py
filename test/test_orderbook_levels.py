@@ -3,9 +3,9 @@ import sys
 
 sys.path.append('src')
 
-from price_levels import Bids, Asks
-from order import Order, LimitOrder, MarketOrder, OrderID, OrderParameters
-from custom_types import OrderType, ExecutionRules, Side
+from orderbook.price_levels import Bids, Asks
+from orders.order import Order, LimitOrder, MarketOrder, OrderID, OrderParameters
+from bookkeeping.custom_types import OrderType, ExecutionRules, Side
 
 
 
