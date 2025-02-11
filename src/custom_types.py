@@ -1,6 +1,5 @@
 import enum
-from typing import Self
-        
+
 class Side(enum.Enum):
     BID = 1
     ASK = -1
