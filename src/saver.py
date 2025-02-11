@@ -23,10 +23,16 @@ class Saver:
         self.now = datetime.datetime.now()
 
     def order_to_csv(self, order: Order, path: str = None) -> None:
-        
+        """
+        Save order in CSV file.
+        """
         pass
 
     def orderbook_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:        
+
+        """
+        Save order book state in CSVs: separate bids and asks.
+        """
 
         date = self.now.date().strftime('%Y_%m_%d')
         
@@ -53,6 +59,10 @@ class Saver:
             write_dict_to_csv(writer, asks_state)
 
     def top_of_book_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:        
+
+        """
+        Save top of book state in CSVs: separate bids and asks.
+        """
 
         date = self.now.date().strftime('%Y_%m_%d')
 
