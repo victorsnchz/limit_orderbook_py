@@ -11,7 +11,7 @@ class OrderParameters:
 @dataclass(frozen = True)
 class OrderID:
 
-    userId: int
+    user_id: int
 
     def __post_init__(self):
 
@@ -58,5 +58,3 @@ class LimitOrder(Order):
 
         self.limit_price = limit_price
         self.execution_rules = execution_rules
-
-    
