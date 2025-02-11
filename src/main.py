@@ -26,12 +26,9 @@ def main():
             exec = LimitOrderExecution(order, orderbook)
             exec.execute()
 
-            bids_volumes, asks_volumes = orderbook.get_volumes()
-            depth_chart.update_order_book(bids_volumes, asks_volumes)
+        depth_chart.update_orderbook(orderbook)
             
         time.sleep(.5)
-
-
 
     
 if __name__ == '__main__':
