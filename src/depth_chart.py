@@ -24,12 +24,12 @@ class DepthChart(Visuals):
 
         self._bids, self._asks = self._orderbook.get_volumes()
 
-    def update_volumes(self) -> None:
+    def _update_volumes(self) -> None:
         self._bids, self._asks = self._orderbook.get_volumes()
 
-    def update(self, frame):
+    def _update(self, frame):
 
-        self.update_volumes()
+        self._update_volumes()
 
         if not self._bids or not self._asks:
             return self._bid_line, self._ask_line, self._best_bid_line, self._best_ask_line  # Skip update if empty
