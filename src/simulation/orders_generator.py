@@ -36,15 +36,17 @@ class MarketOrdersGenerator(OrdersGenerator):
                                                            user_id=user_id)
             orders.add(order)
         
-        return order
+        return orders
 
     def generate_orders(self, bid_count: int, ask_count: int, 
-                        bid_volume: int, ask_volume: int) -> tuple[set[Order]]:
+                        bid_volume: int, ask_volume: int, **kwargs) -> tuple[set[Order]]:
         
         bid_orders = self.generate_for_side(side = Side.BID, count = bid_count, 
                                             mean_volume = bid_volume)
         ask_orders = self.generate_for_side(side = Side.ASK, count = ask_count,
                                             mean_volume = ask_volume)
+        
+        return bid_orders, ask_orders
 
 class LimitOrdersGenerator(OrdersGenerator):
     def __init__(self):
