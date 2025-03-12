@@ -1,7 +1,7 @@
 from orders.order import Order, MarketOrder, LimitOrder
 from orderbook.orderbook import OrderBook
 from orderbook.price_levels import PriceLevels
-from bookkeeping.custom_types import Side
+from bookkeeping.custom_types import Side, OrderType
 from orderbook.orders_queue import OrdersQueue
 from orders.filled_order import FilledOrder
 
@@ -146,3 +146,7 @@ class MarketOrderExecution(OrderExecution):
                 top_price = opposite_price_levels.get_best_price()
                 opposite_price_levels.delete_level(top_price)
     
+map_order_type_to_execution = {
+    OrderType.LIMIT: LimitOrderExecution,
+    OrderType.MARKET: MarketOrderExecution
+}
