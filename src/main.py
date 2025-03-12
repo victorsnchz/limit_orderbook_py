@@ -5,7 +5,7 @@ import random
 
 from bookkeeping.custom_types import OrderType
 from orderbook.orderbook import OrderBook
-from orderbook.order_execution import LimitOrderExecution, MarketOrderExecution
+from orderbook.order_execution import map_order_type_to_execution
 from visuals.depth_chart import DepthChart
 from simulation.orders_generator import map_order_type_to_generator, OrdersGenerator
 
@@ -47,7 +47,7 @@ def main():
         orders = bids | asks
 
         for order in orders:
-            exec = LimitOrderExecution(order, orderbook)
+            exec = map_order_type_to_execution[order_type](order, orderbook)
             exec.execute()
 
         depth_chart._update_orderbook(orderbook)
