@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from bookkeeping.custom_types import ExecutionRules, Side
 import datetime
-    
+from abc import ABC, abstractmethod    
+
 @dataclass(frozen = True)
 class OrderParameters:
 
@@ -19,12 +20,18 @@ class OrderID:
 
     def __post_init__(self):
 
+        # ideally users should have unique ID
+        # given ID new order should have unique ID via hash
+        # should be able to verufy that given order belongs to given customer 
+        # not necessary but cool feature
+
         object.__setattr__(self, 'creation_time', datetime.datetime.now())
 
-        id_as_hash = str(hash(f'{self.creation_time}'))[1:8]
+        id_as_hash = int(str(hash(f'{self.creation_time}'))[1:8])
         object.__setattr__(self, 'order_id', id_as_hash)
+
     
-class Order:
+class Order(ABC):
 
     """
     Store order informations and any relevant order updates.
@@ -36,6 +43,10 @@ class Order:
         self.id: OrderID = id
 
         self.remaining_quantity = self._parameters.initial_quantity
+
+    def __hash__(self):
+        return int(self.id.order_id)
+    
 
     def fill_quantity(self, quantity_to_fill: float) -> None:
         to_fill = min(self.remaining_quantity, quantity_to_fill)
@@ -65,12 +76,18 @@ class MarketOrder(Order):
 class LimitOrder(Order):
 
     """
-    Limit orders matched against opposite side in book, remaining quantity will be posted.
+    Limit orders matched against opposite side in book, 
+    remaining quantity will be posted.
+    By default GoodTillCancelled.
     """
 
     def __init__(self, parameters: OrderParameters, id: OrderID,
-                limit_price: float, execution_rules: ExecutionRules):
+                limit_price: float, execution_rules: ExecutionRules = None):
         super().__init__(parameters, id)
 
         self.limit_price = limit_price
         self.execution_rules = execution_rules
+
+    def __post_init__(self):
+        if self.execution_rules == None:
+            self.execution_rules = ExecutionRules.GTC
