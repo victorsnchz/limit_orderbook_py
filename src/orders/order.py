@@ -1,93 +1,91 @@
 from dataclasses import dataclass
-from bookkeeping.custom_types import ExecutionRules, Side
-import datetime
-from abc import ABC, abstractmethod    
+from bookkeeping.custom_types import ExecutionRule, Side, OrderType  
+from typing import Optional
 
-@dataclass(frozen = True)
-class OrderParameters:
-
+@dataclass(frozen=True)
+class OrderSpec:
     side: Side
-    initial_quantity: float | int
+    order_type: OrderType
+    quantity: int
+    execution_rule: ExecutionRule
+    limit_price: Optional[int] = None
 
-@dataclass(frozen = True)
+    def __post_init__(self):
+        pass
+
+@dataclass(frozen=True)
 class OrderID:
-
-    """
-    Store user and order information.
-    """
-
+    order_id: int
     user_id: int
 
     def __post_init__(self):
-
-        # ideally users should have unique ID
-        # given ID new order should have unique ID via hash
-        # should be able to verufy that given order belongs to given customer 
-        # not necessary but cool feature
-
-        object.__setattr__(self, 'creation_time', datetime.datetime.now())
-
-        id_as_hash = int(str(hash(f'{self.creation_time}'))[1:8])
-        object.__setattr__(self, 'order_id', id_as_hash)
+        pass
 
     
-class Order(ABC):
+class Order:
 
     """
     Store order informations and any relevant order updates.
     """
 
-    def __init__(self, parameters: OrderParameters, id: OrderID):
+    def __init__(self, spec: OrderSpec, id: OrderID):
         
-        self._parameters: OrderParameters = parameters
-        self.id: OrderID = id
+        self._spec = spec
+        self._id = id
 
-        self.remaining_quantity = self._parameters.initial_quantity
+        self.remaining_quantity = self._spec.quantity
 
-    def __hash__(self):
-        return int(self.id.order_id)
+    # --- spec immutable views ---
+
+    @property
+    def side(self) -> Side:
+        return self._spec.side
+
+    @property
+    def order_type(self) -> OrderType:
+        return self._spec.order_type
+
+    @property
+    def limit_price(self) -> Optional[int]:
+        return self._spec.limit_price
+
+    @property
+    def execution_rule(self) -> ExecutionRule:
+        return self._spec.execution_rule
+    
+    # --- identity immutable views ---
+
+    @property
+    def order_id(self) -> int:
+        return self._id.order_id
     
 
-    def fill_quantity(self, quantity_to_fill: float) -> None:
-        to_fill = min(self.remaining_quantity, quantity_to_fill)
-        self.remaining_quantity -= to_fill
+    @property
+    def user_id(self) -> int:
+        return self._id.user_id
+    
+
+    # --- mutable states ---
+
+    def fill(self, quantity: int) -> int:
+
+        if min(quantity, self.remaining_quantity) <= 0: return 0
+
+        filled = min(quantity, self.remaining_quantity)
+
+        self.remaining_quantity -= filled
+
+        return filled
+    
 
     def is_filled(self) -> bool:
-        return self.remaining_quantity == 0
+        return not bool(self.remaining_quantity)
     
-    def get_side(self) -> Side:
-        return self._parameters.side
-    
-    def get_initial_quantity(self) -> int | float:
-        return self._parameters.initial_quantity
-    
-    def get_id(self) -> int:
-        return self.id.order_id
+    def reduce(self, new_quantity: int) -> None:
 
-class MarketOrder(Order):
+        if new_quantity >= self.remaining_quantity:
+            raise ValueError("new_quantity must be less than remaining quantity "
+                             "else cancel and psot new order.")
+        
+        self.remaining_quantity = new_quantity
 
-    """
-    Market orders matched against opposite side in book. Will not live in the book (not postable).
-    """
-    
-    def __init__(self, parameters: OrderParameters, id: OrderID):
-        super().__init__(parameters, id)
-          
-class LimitOrder(Order):
-
-    """
-    Limit orders matched against opposite side in book, 
-    remaining quantity will be posted.
-    By default GoodTillCancelled.
-    """
-
-    def __init__(self, parameters: OrderParameters, id: OrderID,
-                limit_price: float, execution_rules: ExecutionRules = None):
-        super().__init__(parameters, id)
-
-        self.limit_price = limit_price
-        self.execution_rules = execution_rules
-
-    def __post_init__(self):
-        if self.execution_rules == None:
-            self.execution_rules = ExecutionRules.GTC

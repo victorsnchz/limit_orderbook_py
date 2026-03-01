@@ -1,5 +1,5 @@
 from orderbook.orders_queue import OrdersQueue
-from orders.order import LimitOrder
+from orders.order import Order
 
 from sortedcontainers import SortedDict
 
@@ -20,7 +20,7 @@ class PriceLevels:
         """
         return not bool(self.levels)
 
-    def post_order(self, order: LimitOrder ) -> None:
+    def post_order(self, order: Order ) -> None:
         """
         Add order to queue at approriate price level. If no level exists create it.
         """
@@ -66,7 +66,7 @@ class PriceLevels:
             participants = set()
 
             for order in queue.queue.values():
-                participants.add(order.id.user_id)
+                participants.add(order.user_id)
                 total_volume += order.remaining_quantity
 
             levels_info[price_level] = (total_volume, len(participants))
@@ -86,7 +86,7 @@ class PriceLevels:
 
         for order in top_of_book.queue.values():
             total_volume += order.remaining_quantity
-            participants.add(order.id.user_id)
+            participants.add(order.user_id)
 
         return {best_price: (total_volume, len(participants))}
 

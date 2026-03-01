@@ -8,7 +8,7 @@ class OrderType(enum.Enum):
     MARKET = enum.auto()
     LIMIT = enum.auto() 
 
-class ExecutionRules(enum.Enum):
+class ExecutionRule(enum.Enum):
     GFD = enum.auto()
     GTC = enum.auto()
     IOC = enum.auto()
