@@ -4,23 +4,28 @@ import sys
 #sys.path.append('../')
 sys.path.append('src')
 
-from orders.order import Order, MarketOrder, LimitOrder, OrderParameters, OrderID
-from bookkeeping.custom_types import ExecutionRules, OrderType, Side
+from orders.order import Order, OrderID, OrderSpec
+from bookkeeping.custom_types import ExecutionRule, OrderType, Side
 from orderbook.order_execution import LimitOrderExecution, MarketOrderExecution
 from orderbook.orderbook import OrderBook
-from orders.order import LimitOrder
 
 class TestLimitOrderExecution(unittest.TestCase):
 
     def test_case_post(self):
         orderbook = OrderBook()
-        order_to_post = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=100, execution_rules = ExecutionRules.GTC)
+
+        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity=100, execution_rule=ExecutionRule.GTC,
+                         limit_price=100)
+        
+
+
+        order_to_post = Order(spec, OrderID(0, 0))
         
         exec = LimitOrderExecution(order_to_post, orderbook)
         exec.post_order()
 
-        price_levels = orderbook.get_levels(order_to_post.get_side())
+        price_levels = orderbook.get_levels(order_to_post.side)
 
         self.assertEqual(order_to_post.limit_price in price_levels.levels, True)
 
@@ -28,19 +33,26 @@ class TestLimitOrderExecution(unittest.TestCase):
         common_price = 100
 
         orderbook = OrderBook()
-        order_to_post = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=common_price, execution_rules = ExecutionRules.GTC)
+
+        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity = 100, execution_rule=ExecutionRule.GTC,
+                         limit_price = common_price)
+
+        order_to_post = Order(spec, OrderID(0, 0))
         
         exec = LimitOrderExecution(order_to_post, orderbook)
         exec.post_order()
 
-        order_to_match = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(1),
-                               limit_price=common_price, execution_rules = ExecutionRules.GTC)
+        spec = OrderSpec(Side.ASK, OrderType.LIMIT, 
+                         quantity = 100, execution_rule=ExecutionRule.GTC,
+                         limit_price = common_price)
+
+        order_to_match = Order(spec, OrderID(1, 0))
 
         exec = LimitOrderExecution(order_to_match, orderbook)
         exec.match_order()
 
-        price_levels = orderbook.get_opposite_side_levels(order_to_match.get_side())
+        price_levels = orderbook.get_opposite_side_levels(order_to_match.side)
 
         self.assertEqual(common_price in price_levels.levels, False)
         self.assertEqual(order_to_post.is_filled(), True)
@@ -49,19 +61,26 @@ class TestLimitOrderExecution(unittest.TestCase):
     def test_case_cannot_match(self):
 
         orderbook = OrderBook()
-        order_to_post = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=100, execution_rules = ExecutionRules.GTC)
+
+        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity = 100, execution_rule=ExecutionRule.GTC,
+                         limit_price = 100)
+        
+        order_to_post = Order(spec, OrderID(0, 0))
         
         exec = LimitOrderExecution(order_to_post, orderbook)
         exec.post_order()
 
-        order_to_match = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(1),
-                               limit_price=101, execution_rules = ExecutionRules.GTC)
+        spec = OrderSpec(Side.ASK, OrderType.LIMIT, 
+                         quantity = 100, execution_rule=ExecutionRule.GTC,
+                         limit_price = 105)
+
+        order_to_match = Order(spec, OrderID(1, 0))
 
         exec = LimitOrderExecution(order_to_match, orderbook)
         exec.match_order()
 
-        price_levels = orderbook.get_opposite_side_levels(order_to_match.get_side())
+        price_levels = orderbook.get_opposite_side_levels(order_to_match.side)
 
         self.assertEqual(order_to_post.limit_price in price_levels.levels, True)
         self.assertEqual(order_to_post.is_filled(), False)
@@ -72,14 +91,22 @@ class TestLimitOrderExecution(unittest.TestCase):
         common_price = 100
 
         orderbook = OrderBook()
-        order_to_post = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=common_price, execution_rules = ExecutionRules.GTC)
+
+        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity = 100, execution_rule=ExecutionRule.GTC,
+                         limit_price = common_price)
+
+
+        order_to_post = Order(spec, OrderID(0, 0))
         
         exec = LimitOrderExecution(order_to_post, orderbook)
         exec.post_order()
 
-        order_to_match = LimitOrder(OrderParameters(Side.ASK, 150), OrderID(1),
-                               limit_price=common_price, execution_rules = ExecutionRules.GTC)
+        spec = OrderSpec(Side.ASK, OrderType.LIMIT, 
+                         quantity = 150, execution_rule=ExecutionRule.GTC,
+                         limit_price = common_price)
+
+        order_to_match = Order(spec, OrderID(1, 0))
 
         exec = LimitOrderExecution(order_to_match, orderbook)
         exec.execute()
@@ -90,24 +117,31 @@ class TestLimitOrderExecution(unittest.TestCase):
         self.assertEqual(order_to_match.is_filled(), False)
         
 
-class TestMarketOrderExecution(unittest.TestCase):
-
+class TestMarketOrderExecutionAgainstLimit(unittest.TestCase):
     def test_case_match(self):
         common_price = 100
 
         orderbook = OrderBook()
-        order_to_post = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=common_price, execution_rules = ExecutionRules.GTC)
+        
+        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity = 100, execution_rule=ExecutionRule.GTC,
+                         limit_price = common_price)
+
+        order_to_post = Order(spec, OrderID(0, 0))
         
         exec = LimitOrderExecution(order_to_post, orderbook)
         exec.post_order()
 
-        order_to_match = MarketOrder(OrderParameters(Side.ASK, 100), OrderID(1))
+        spec = OrderSpec(Side.ASK, OrderType.MARKET, 
+                         quantity = 100, execution_rule=ExecutionRule.GTC,
+                         limit_price = common_price)
+
+        order_to_match = Order(spec, OrderID(1, 0))
 
         exec = MarketOrderExecution(order_to_match, orderbook)
         exec.execute()
 
-        price_levels = orderbook.get_opposite_side_levels(order_to_match.get_side())
+        price_levels = orderbook.get_opposite_side_levels(order_to_match.side)
 
         self.assertEqual(common_price in price_levels.levels, False)
         self.assertEqual(order_to_post.is_filled(), True)
@@ -117,12 +151,16 @@ class TestMarketOrderExecution(unittest.TestCase):
 
         orderbook = OrderBook()
 
-        order_to_match = MarketOrder(OrderParameters(Side.ASK, 100), OrderID(1))
+        spec = OrderSpec(Side.BID, OrderType.MARKET, 
+                         quantity = 100, execution_rule=ExecutionRule.GTC,
+                         limit_price = 100)
+
+        order_to_match = Order(spec, OrderID(0, 0))
 
         exec = MarketOrderExecution(order_to_match, orderbook)
         exec.execute()
 
-        price_levels = orderbook.get_opposite_side_levels(order_to_match.get_side())
+        price_levels = orderbook.get_opposite_side_levels(order_to_match.side)
 
         self.assertEqual(order_to_match.is_filled(), False)
 
