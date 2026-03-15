@@ -1,15 +1,13 @@
 import unittest
 import sys
-import datetime
 import os
-import csv
+from pathlib import Path
 
 #sys.path.append('../')
 sys.path.append('src')
 
-from orderbook.price_levels import Bids
-from orders.order import LimitOrder, OrderParameters, OrderID
-from bookkeeping.custom_types import Side, ExecutionRules
+from orders.order import OrderID, Order, OrderSpec
+from bookkeeping.custom_types import Side, ExecutionRule, OrderType
 from orderbook.order_execution import LimitOrderExecution
 from orderbook.orderbook import OrderBook
 from bookkeeping.saver import Saver
@@ -21,149 +19,110 @@ import bookkeeping.files_manager as files_manager
 test_saver_data_dir = f'{os.path.abspath(os.path.dirname(__file__))}/../test_data/test_saver'
 saver = Saver(data_directory=test_saver_data_dir)
 
-class TestSaverBookState(unittest.TestCase):
+class SaverTestBase(unittest.TestCase):
+
+    test_case_dir: str
+
+    def setUp(self):
+        
+        base_dir = Path(test_saver_data_dir) / self.test_case_dir
+        for entry in base_dir.iterdir():
+            results_path = entry / 'results'
+            if results_path.is_dir():
+                shutil.rmtree(results_path)
+
+    def assert_saver_output(self, orderbook: OrderBook, save_fn, test_dir: str):
+        
+        save_fn(orderbook, path = f"{self.test_case_dir}/{test_dir}/results")
+
+        base = Path(test_saver_data_dir) / self.test_case_dir / test_dir
+
+        for side in ('bid', 'ask'):
+            pairs = list(files_manager.read_two_csvs(
+                base / 'targets' / f'{side}.csv',
+                base / 'results' / f'{side}.csv',
+            ))
+
+        self.assertGreater(len(pairs), 0, f"{side} CSV comparison yielded no rows")
+        
+        for target, result in pairs:
+            self.assertEqual(target, result)
+
+class TestSaverBookState(SaverTestBase):
 
     test_case_dir = 'book_state'
-
+    
     def test_case_one_state(self):
 
-        orderbook = OrderBook()
-
-        bid1 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                                limit_price=100, execution_rules = ExecutionRules.GTC)
-
-        ask1 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(2),
-                                limit_price=110, execution_rules = ExecutionRules.GTC)
-
-        orders = [bid1, ask1]
-
-        for order in orders:
-            exec = LimitOrderExecution(order, orderbook)
-            exec.execute()
-
-        test_dir = 'one_state'
-        saver.orderbook_state_to_csv(orderbook, path = f'{self.test_case_dir}/{test_dir}/results')
-
-        target_bid, target_ask = files_manager.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-        result_bid, result_ask = files_manager.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-
-        for target_bid_state, results_bid_state in files_manager.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
-            self.assertEqual(target_bid_state, results_bid_state)
-
-        for target_ask_state, results_ask_state in files_manager.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
-            self.assertEqual(target_ask_state, results_ask_state)
-
-        shutil.rmtree(f'{test_saver_data_dir}/{self.test_case_dir}/{test_dir}/results')
+        orderbook = _build_one_state_book()
+        self.assert_saver_output(orderbook, saver.orderbook_state_to_csv, 'one_state')
 
     def test_case_multiple_states(self):
 
-        orderbook = OrderBook()
+        orderbook = _build_multiple_states_book()
+        self.assert_saver_output(orderbook, saver.orderbook_state_to_csv, 'multiple_states')
 
-        bid1 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                            limit_price=100, execution_rules = ExecutionRules.GTC)
-        bid2 = LimitOrder(OrderParameters(Side.BID, 200), OrderID(1),
-                                limit_price=100, execution_rules = ExecutionRules.GTC)
-        bid3 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                                limit_price=105, execution_rules = ExecutionRules.GTC)
-
-        ask1 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(2),
-                                limit_price=110, execution_rules = ExecutionRules.GTC)
-        ask2 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(3),
-                                limit_price=120, execution_rules = ExecutionRules.GTC)
-
-        orders = [bid1, bid2, bid3, ask1, ask2]
-
-        for order in orders:
-            exec = LimitOrderExecution(order, orderbook)
-            exec.execute()
-
-
-        test_dir = 'multiple_states'
-        saver.orderbook_state_to_csv(orderbook, path = f'{self.test_case_dir}/{test_dir}/results')
-
-        target_bid, target_ask = files_manager.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-        result_bid, result_ask = files_manager.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-
-        for target_bid_state, results_bid_state in files_manager.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
-            self.assertEqual(target_bid_state, results_bid_state)
-
-        for target_ask_state, results_ask_state in files_manager.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
-            self.assertEqual(target_ask_state, results_ask_state)
-
-        shutil.rmtree(f'{test_saver_data_dir}/{self.test_case_dir}/{test_dir}/results')
-
-class TestSaverTopOfBookState(unittest.TestCase):
+class TestSaverTopOfBookState(SaverTestBase):
     test_case_dir = 'top_of_book_state'
 
     def test_case_one_state(self):
         
-        orderbook = OrderBook()
-
-        bid1 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                                limit_price=100, execution_rules = ExecutionRules.GTC)
-
-        ask1 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(2),
-                                limit_price=110, execution_rules = ExecutionRules.GTC)
-
-        orders = [bid1, ask1]
-
-        for order in orders:
-            exec = LimitOrderExecution(order, orderbook)
-            exec.execute()
-
-
-        test_dir = 'one_state'
-        saver.top_of_book_state_to_csv(orderbook, path = f'{self.test_case_dir}/{test_dir}/results')
-
-        target_bid, target_ask = files_manager.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-        result_bid, result_ask = files_manager.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-
-        for target_bid_state, results_bid_state in files_manager.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
-            self.assertEqual(target_bid_state, results_bid_state)
-
-        for target_ask_state, results_ask_state in files_manager.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
-            self.assertEqual(target_ask_state, results_ask_state)
-
-        shutil.rmtree(f'{test_saver_data_dir}/{self.test_case_dir}/{test_dir}/results')
+        orderbook = _build_one_state_book()
+        self.assert_saver_output(orderbook, saver.orderbook_state_to_csv, 'one_state')
 
     def test_case_multiple_states(self):
 
-        orderbook = OrderBook()
-
-        bid1 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                            limit_price=100, execution_rules = ExecutionRules.GTC)
-        bid2 = LimitOrder(OrderParameters(Side.BID, 200), OrderID(1),
-                                limit_price=100, execution_rules = ExecutionRules.GTC)
-        bid3 = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                                limit_price=105, execution_rules = ExecutionRules.GTC)
-
-        ask1 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(2),
-                                limit_price=110, execution_rules = ExecutionRules.GTC)
-        ask2 = LimitOrder(OrderParameters(Side.ASK, 100), OrderID(3),
-                                limit_price=120, execution_rules = ExecutionRules.GTC)
-
-        orders = [bid1, bid2, bid3, ask1, ask2]
-
-        for order in orders:
-            exec = LimitOrderExecution(order, orderbook)
-            exec.execute()
-
-        test_dir = 'multiple_states'
-        saver.top_of_book_state_to_csv(orderbook, path = f'{self.test_case_dir}/{test_dir}/results')
-
-        target_bid, target_ask = files_manager.get_target_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-        result_bid, result_ask = files_manager.get_results_names_bid_ask(test_saver_data_dir, self.test_case_dir, test_dir)
-
-        for target_bid_state, results_bid_state in files_manager.read_two_csvs(f'{target_bid}.csv', f'{result_bid}.csv'):
-            self.assertEqual(target_bid_state, results_bid_state)
-
-        for target_ask_state, results_ask_state in files_manager.read_two_csvs(f'{target_ask}.csv', f'{result_ask}.csv'):
-            self.assertEqual(target_ask_state, results_ask_state)
-
-        shutil.rmtree(f'{test_saver_data_dir}/{self.test_case_dir}/{test_dir}/results')
+        orderbook = _build_multiple_states_book()
+        self.assert_saver_output(orderbook, saver.orderbook_state_to_csv, 'multiple_states')
     
 class TestSaverOrders(unittest.TestCase):
     pass
+
+def _build_one_state_book() -> OrderBook:
+    orderbook = OrderBook()
+
+    bid_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity=100, execution_rule=ExecutionRule.GTC,
+                         limit_price=99)
+    
+    ask_spec = OrderSpec(Side.ASK, OrderType.LIMIT, 
+                        quantity=100, execution_rule=ExecutionRule.GTC,
+                        limit_price=101)
+
+    bid1 = Order(bid_spec, OrderID(0, 0))
+
+    ask1 = Order(ask_spec, OrderID(1, 0))
+
+    orders = [bid1, ask1]
+
+    for order in orders:
+        order_exec = LimitOrderExecution(order, orderbook)
+        order_exec.execute()
+
+    return orderbook
+
+def _build_multiple_states_book() -> OrderBook:
+    orderbook = OrderBook()
+
+    bid_specs = [OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity= 100, execution_rule=ExecutionRule.GTC,
+                         limit_price= 100 - i) for i in range(1, 4)]
+        
+    ask_specs = [OrderSpec(Side.ASK, OrderType.LIMIT, 
+                        quantity= 100, execution_rule=ExecutionRule.GTC,
+                        limit_price = 100 + i) for i in range(1, 4)]
+
+    bid_orders = [Order(bid_spec, OrderID(100 + 1, 0)) for i, bid_spec, in enumerate(bid_specs)]
+
+    ask_orders = [Order(ask_spec, OrderID(1000 + i, 0)) for i, ask_spec, in enumerate(ask_specs)]
+
+    orders = bid_orders + ask_orders
+
+    for order in orders:
+        order_exec = LimitOrderExecution(order, orderbook)
+        order_exec.execute()
+
+    return orderbook
 
 if __name__ == '__main__':
     unittest.main()
