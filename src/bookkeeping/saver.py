@@ -46,14 +46,12 @@ class Saver:
 
         bids_state, asks_state = orderbook.get_orderbook_state()
 
-        timestamp = self.now.time().strftime('%H_%M_%S')
-
-        with open(f'{orderbook_state_dir}/bid_{timestamp}.csv', 'w') as csv_file:
+        with open(f'{orderbook_state_dir}/bid.csv', 'w') as csv_file:
             
             writer = csv.writer(csv_file)
             write_dict_to_csv(writer, bids_state)
 
-        with open(f'{orderbook_state_dir}/ask_{timestamp}.csv', 'w') as csv_file:
+        with open(f'{orderbook_state_dir}/ask.csv', 'w') as csv_file:
             
             writer = csv.writer(csv_file)
             write_dict_to_csv(writer, asks_state)
