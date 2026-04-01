@@ -40,7 +40,11 @@ class Order:
     @property
     def side(self) -> Side:
         return self._spec.side
-
+    
+    @property
+    def initial_quantity(self) -> int: 
+        return self._spec.quantity
+    
     @property
     def order_type(self) -> OrderType:
         return self._spec.order_type
@@ -53,6 +57,9 @@ class Order:
     def execution_rule(self) -> ExecutionRule:
         return self._spec.execution_rule
     
+    @property
+    def is_filled(self) -> bool:
+        return not bool(self.remaining_quantity)
     # --- identity immutable views ---
 
     @property
@@ -77,9 +84,6 @@ class Order:
 
         return filled
     
-
-    def is_filled(self) -> bool:
-        return not bool(self.remaining_quantity)
     
     def reduce(self, new_quantity: int) -> None:
 

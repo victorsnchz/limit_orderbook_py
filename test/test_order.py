@@ -7,46 +7,62 @@ import sys
 # individual test module will fail import otherwise
 sys.path.append('src')
 
-from orders.order import Order, MarketOrder, LimitOrder, OrderParameters, OrderID
-from bookkeeping.custom_types import ExecutionRules, OrderType, Side
+from orders.order import OrderSpec, Order, OrderID
+from bookkeeping.custom_types import ExecutionRule, OrderType, Side
 
 class TestOrder(unittest.TestCase):
 
     def test_case_init_order(self):
 
-        gtc_order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=100, execution_rules = ExecutionRules.GTC)
+        order_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity=100, execution_rule=ExecutionRule.GTC,
+                         limit_price=99)
+
+        order = Order(order_spec, OrderID(0, 0))
         
-        self.assertEqual(gtc_order.remaining_quantity, gtc_order.get_initial_quantity())
+        self.assertEqual(order.remaining_quantity, order.initial_quantity)
 
     def test_case_fill_quantity(self):
 
-        gtc_order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=100, execution_rules = ExecutionRules.GTC)
-
+        order_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity=100, execution_rule=ExecutionRule.GTC,
+                         limit_price = 99)
+        
+        order = Order(order_spec, OrderID(0, 0))
+        
         to_fill = 50
-        gtc_order.fill_quantity(to_fill)
-        self.assertEqual(gtc_order.remaining_quantity, gtc_order.get_initial_quantity() - to_fill)
-        self.assertEqual(gtc_order.is_filled(), False)
+
+        order.fill(to_fill)
+        
+        self.assertEqual(order.remaining_quantity, order.initial_quantity - to_fill)
+        self.assertEqual(order.is_filled, False)
 
     def test_case_full_fill(self):
 
-        gtc_order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=100, execution_rules = ExecutionRules.GTC)
+        order_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity=100, execution_rule=ExecutionRule.GTC,
+                         limit_price = 99)
+        
+        order = Order(order_spec, OrderID(0, 0))
+    
+        to_fill = order.remaining_quantity
+        order.fill(to_fill)
 
-        to_fill = gtc_order.remaining_quantity
-        gtc_order.fill_quantity(to_fill)
-        self.assertEqual(gtc_order.remaining_quantity, 0)
-        self.assertEqual(gtc_order.is_filled(), True)
-
+        self.assertEqual(order.remaining_quantity, 0)
+        self.assertEqual(order.is_filled, True)
+    
     def test_case_overfill(self):
-        gtc_order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=100, execution_rules = ExecutionRules.GTC)
-
-        to_fill = gtc_order.remaining_quantity * 2
-        gtc_order.fill_quantity(to_fill )
-        self.assertEqual(gtc_order.remaining_quantity, 0)
-        self.assertEqual(gtc_order.is_filled(), True)
+        
+        order_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
+                         quantity=100, execution_rule=ExecutionRule.GTC,
+                         limit_price = 99)
+        
+        order = Order(order_spec, OrderID(0, 0))
+        
+        to_fill = order.remaining_quantity * 2
+        order.fill(to_fill)
+        self.assertEqual(order.remaining_quantity, 0)
+        self.assertEqual(order.is_filled, True)
 
 if __name__ == '__main__':
     unittest.main()
