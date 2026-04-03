@@ -1,36 +1,43 @@
 import unittest
 import sys
 
-sys.path.append('src')
+sys.path.append("src")
 
-from orderbook.orders_queue import OrdersQueue
-from orders.order import Order, LimitOrder, MarketOrder, OrderID, OrderParameters
-from bookkeeping.custom_types import ExecutionRules, OrderType, Side
 
-class  TestOrdersQueue(unittest.TestCase):
+class TestOrdersQueue(unittest.TestCase):
+    def setUp(self): ...
 
-    def test_case_add(self):
+    def test_is_empty_true_on_init(self): ...
+    def test_is_empty_false_after_add(self): ...
+    def is_empty_true_after_add_then_remove(self): ...
+    def test_add_single_order(self):
+        # verify queue contains order after add
+        ...
 
-        orders_queue = OrdersQueue()
+    def test_add_duplicate_id_raises(self):
+        # adding two orders with same order_id should raise RuntimeError
+        ...
 
-        order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=100, execution_rules = ExecutionRules.GTC)
-        orders_queue.add_order(order)
+    def test_add_multiple_orders_all_present(self): ...
+    def test_remove_returns_the_order(self):
+        # returned object is the one expected (the one that was added)
+        # do we care about representation or what reference points to? legitimate q?
+        ...
 
-        self.assertEqual(order.get_id() in orders_queue.queue, True)
+    def test_remove_last_order_queue_empty(self): ...
+    def test_remove_leaves_others_intact(self): ...
+    def test_remove_non_existent_raises(self): ...
+    def test_next_returns_first_inserted(self): ...
+    def test_next_does_not_modify(self): ...
+    def test_next_on_empty_raises(self): ...
 
-    def test_case_remove(self):
 
-        orders_queue = OrdersQueue()
-        order = LimitOrder(OrderParameters(Side.BID, 100), OrderID(0),
-                               limit_price=100, execution_rules = ExecutionRules.GTC)
-        
-        orders_queue.add_order(order)
+class TestOrdersQueueFIFO(unittest.TestCase):
+    def setUp(self): ...
+    def test_fifo_two_orders(self): ...
+    def test_fifo_three_orders_full_drain(self): ...
+    def test_fifo_not_affected_by_order_id_value(self): ...
 
-        orders_queue.remove_order(order)
 
-        self.assertEqual(bool(orders_queue.queue), False)
-
-    
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
