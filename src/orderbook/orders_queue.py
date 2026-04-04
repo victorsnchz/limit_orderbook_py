@@ -1,8 +1,8 @@
 import collections
 from orders.order import Order
 
-class OrdersQueue:
 
+class OrdersQueue:
     """
     Store orders in a queue at each price level.
     FIFO.
@@ -10,12 +10,11 @@ class OrdersQueue:
     """
 
     def __init__(self):
-        # Python dicts preserve insertion order since 3.7 
-        # OrderedDict redundqnt BUT clarifies purpose of this data struct
+        # Python dicts preserve insertion order since 3.7
+        # OrderedDict redundant BUT clarifies purpose of this data struct
         self.queue: collections.OrderedDict[int, Order] = collections.OrderedDict()
-    
-    def add_order(self, order: Order):
 
+    def add_order(self, order: Order):
         """
         Add order last in queue if not already in queue.
         """
@@ -23,7 +22,7 @@ class OrdersQueue:
         if order.order_id not in self.queue:
             self.queue[order.order_id] = order
         else:
-            raise RuntimeError(f'order id {order.order_id} already in queue')
+            raise RuntimeError(f"order id {order.order_id} already in queue")
 
     def remove_order(self, order: Order) -> Order:
         """
@@ -32,12 +31,14 @@ class OrdersQueue:
 
         return self.queue.pop(order.order_id)
 
+    @property
     def is_empty(self) -> bool:
         """
         Check if queue is empty.
         """
         return not bool(self.queue)
 
+    @property
     def next_order_to_execute(self) -> Order:
         """
         Return next order to be matched against.
