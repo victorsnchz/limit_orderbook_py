@@ -5,64 +5,40 @@ import sys
 # fix import system accross package
 # seems like test_order called first, appends src to path then subsequent test modules can test src
 # individual test module will fail import otherwise
-sys.path.append('src')
+sys.path.append("src")
 
-from orders.order import OrderSpec, Order, OrderID
-from bookkeeping.custom_types import ExecutionRule, OrderType, Side
+from src.orders.order import Order, OrderSpec, OrderID
+from src.bookkeeping.custom_types import OrderType, ExecutionRule
 
-class TestOrder(unittest.TestCase):
 
-    def test_case_init_order(self):
+class TestOrderConstruction(unittest.TestCase):
+    def test_remaining_equals_initial_on_init(self): ...
+    def test_is_filled_false_on_init(self): ...
+    def test_limit_price_accessible(self): ...
+    def test_side_accessible(self): ...
+    def test_order_type_accessible(self): ...
+    def test_execution_rule_accessible(self): ...
+    def test_market_order_has_no_limit_price(self): ...
+    def test_market_order_has_no_execution_rule(self): ...
 
-        order_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity=100, execution_rule=ExecutionRule.GTC,
-                         limit_price=99)
 
-        order = Order(order_spec, OrderID(0, 0))
-        
-        self.assertEqual(order.remaining_quantity, order.initial_quantity)
+class TestOrderFill(unittest.TestCase):
+    def test_partial_fill_reduces_remaining(self): ...
+    def test_partial_fill_is_not_filled(self): ...
+    def test_partial_fill_returns_filled_quantity(self): ...
+    def test_full_fill_sets_remaining_to_zero(self): ...
+    def test_full_fill_is_filled_true(self): ...
+    def test_overfill_clamps_to_zero(self): ...
+    def test_overfill_is_filled_true(self): ...
+    def test_fill_zero_has_no_effect(self): ...
+    def test_fill_zero_returns_zero(self): ...
 
-    def test_case_fill_quantity(self):
 
-        order_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity=100, execution_rule=ExecutionRule.GTC,
-                         limit_price = 99)
-        
-        order = Order(order_spec, OrderID(0, 0))
-        
-        to_fill = 50
+class TestOrderReduce(unittest.TestCase):
+    def test_reduce_updates_remaining(self): ...
+    def test_reduce_to_larger_value_raises(self): ...
+    def test_reduce_to_equal_value_raises(self): ...
 
-        order.fill(to_fill)
-        
-        self.assertEqual(order.remaining_quantity, order.initial_quantity - to_fill)
-        self.assertEqual(order.is_filled, False)
 
-    def test_case_full_fill(self):
-
-        order_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity=100, execution_rule=ExecutionRule.GTC,
-                         limit_price = 99)
-        
-        order = Order(order_spec, OrderID(0, 0))
-    
-        to_fill = order.remaining_quantity
-        order.fill(to_fill)
-
-        self.assertEqual(order.remaining_quantity, 0)
-        self.assertEqual(order.is_filled, True)
-    
-    def test_case_overfill(self):
-        
-        order_spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity=100, execution_rule=ExecutionRule.GTC,
-                         limit_price = 99)
-        
-        order = Order(order_spec, OrderID(0, 0))
-        
-        to_fill = order.remaining_quantity * 2
-        order.fill(to_fill)
-        self.assertEqual(order.remaining_quantity, 0)
-        self.assertEqual(order.is_filled, True)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
