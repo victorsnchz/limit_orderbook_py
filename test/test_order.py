@@ -8,36 +8,165 @@ import sys
 sys.path.append("src")
 
 from src.orders.order import Order, OrderSpec, OrderID
-from src.bookkeeping.custom_types import OrderType, ExecutionRule
+from src.bookkeeping.custom_types import OrderType, Side, ExecutionRule
 
 
 class TestOrderConstruction(unittest.TestCase):
-    def test_remaining_equals_initial_on_init(self): ...
-    def test_is_filled_false_on_init(self): ...
-    def test_limit_price_accessible(self): ...
-    def test_side_accessible(self): ...
-    def test_order_type_accessible(self): ...
-    def test_execution_rule_accessible(self): ...
-    def test_market_order_has_no_limit_price(self): ...
-    def test_market_order_has_no_execution_rule(self): ...
+    def test_remaining_equals_initial_on_init(self):
+        specs = OrderSpec(
+            side=Side.BID,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            execution_rule=ExecutionRule.GTC,
+            limit_price=100,
+        )
+        id = OrderID(0, 0)
+        order = Order(specs, id)
+        self.assertEqual(order.remaining_quantity, order.initial_quantity)
+
+    def test_is_filled_false_on_init(self):
+        specs = OrderSpec(
+            side=Side.BID,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            execution_rule=ExecutionRule.GTC,
+            limit_price=100,
+        )
+        id = OrderID(0, 0)
+        order = Order(specs, id)
+        self.assertFalse(order.is_filled)
+
+    def test_limit_price_accessible(self):
+        specs = OrderSpec(
+            side=Side.BID,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            execution_rule=ExecutionRule.GTC,
+            limit_price=100,
+        )
+        id = OrderID(0, 0)
+        order = Order(specs, id)
+        self.assertEqual(order.limit_price, 100)
+
+    def test_side_accessible(self):
+        specs = OrderSpec(
+            side=Side.BID,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            execution_rule=ExecutionRule.GTC,
+            limit_price=100,
+        )
+        id = OrderID(0, 0)
+        order = Order(specs, id)
+        self.assertEqual(order.side, Side.BID)
+
+    def test_order_type_accessible(self):
+        specs = OrderSpec(
+            side=Side.BID,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            execution_rule=ExecutionRule.GTC,
+            limit_price=100,
+        )
+        id = OrderID(0, 0)
+        order = Order(specs, id)
+        self.assertEqual(order.order_type, OrderType.LIMIT)
+
+    def test_execution_rule_accessible(self):
+        specs = OrderSpec(
+            side=Side.BID,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            execution_rule=ExecutionRule.GTC,
+            limit_price=100,
+        )
+        id = OrderID(0, 0)
+        order = Order(specs, id)
+        self.assertEqual(order.execution_rule, ExecutionRule.GTC)
+
+    def test_market_order_has_no_limit_price(self):
+        specs = OrderSpec(side=Side.BID, order_type=OrderType.MARKET, quantity=100)
+        id = OrderID(0, 0)
+        order = Order(specs, id)
+        self.assertIsNone(order.limit_price)
+
+    def test_market_order_has_no_execution_rule(self):
+        specs = OrderSpec(side=Side.BID, order_type=OrderType.MARKET, quantity=100)
+        id = OrderID(0, 0)
+        order = Order(specs, id)
+        self.assertIsNone(order.execution_rule)
 
 
 class TestOrderFill(unittest.TestCase):
-    def test_partial_fill_reduces_remaining(self): ...
-    def test_partial_fill_is_not_filled(self): ...
-    def test_partial_fill_returns_filled_quantity(self): ...
-    def test_full_fill_sets_remaining_to_zero(self): ...
-    def test_full_fill_is_filled_true(self): ...
-    def test_overfill_clamps_to_zero(self): ...
-    def test_overfill_is_filled_true(self): ...
-    def test_fill_zero_has_no_effect(self): ...
-    def test_fill_zero_returns_zero(self): ...
+    def setUp(self):
+        specs = OrderSpec(
+            side=Side.BID,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            execution_rule=ExecutionRule.GTC,
+            limit_price=100,
+        )
+        id = OrderID(0, 0)
+        self.order = Order(specs, id)
+
+    def test_partial_fill_reduces_remaining(self):
+        self.order.fill(50)
+        self.assertLess(self.order.remaining_quantity, self.order.initial_quantity)
+
+    def test_partial_fill_is_not_filled(self):
+        self.order.fill(50)
+        self.assertFalse(self.order.is_filled)
+
+    def test_partial_fill_returns_filled_quantity(self):
+        self.assertEqual(self.order.fill(50), 50)
+
+    def test_full_fill_sets_remaining_to_zero(self):
+        self.order.fill(100)
+        self.assertEqual(self.order.remaining_quantity, 0)
+
+    def test_full_fill_is_filled_true(self):
+        self.order.fill(100)
+        self.assertTrue(self.order.is_filled)
+
+    def test_overfill_clamps_to_zero(self):
+        self.order.fill(1000)
+        self.assertEqual(self.order.remaining_quantity, 0)
+
+    def test_overfill_is_filled_true(self):
+        self.order.fill(1000)
+        self.assertTrue(self.order.is_filled)
+
+    def test_fill_zero_has_no_effect(self):
+        self.order.fill(0)
+        self.assertEqual(self.order.initial_quantity, self.order.remaining_quantity)
+
+    def test_fill_zero_returns_zero(self):
+        self.assertEqual(self.order.fill(0), 0)
 
 
 class TestOrderReduce(unittest.TestCase):
-    def test_reduce_updates_remaining(self): ...
-    def test_reduce_to_larger_value_raises(self): ...
-    def test_reduce_to_equal_value_raises(self): ...
+    def setUp(self):
+        specs = OrderSpec(
+            side=Side.BID,
+            order_type=OrderType.LIMIT,
+            quantity=100,
+            execution_rule=ExecutionRule.GTC,
+            limit_price=100,
+        )
+        id = OrderID(0, 0)
+        self.order = Order(specs, id)
+
+    def test_reduce_updates_remaining(self):
+        self.order.reduce(50)
+        self.assertEqual(self.order.remaining_quantity, 50)
+
+    def test_reduce_to_larger_value_raises(self):
+        with self.assertRaises(ValueError):
+            self.order.reduce(1000)
+
+    def test_reduce_to_equal_value_raises(self):
+        with self.assertRaises(ValueError):
+            self.order.reduce(100)
 
 
 if __name__ == "__main__":
