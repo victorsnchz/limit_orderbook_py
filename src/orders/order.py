@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from bookkeeping.custom_types import ExecutionRule, Side, OrderType
+from src.bookkeeping.custom_types import ExecutionRule, Side, OrderType
 from typing import Optional
 
 
@@ -8,8 +8,8 @@ class OrderSpec:
     side: Side
     order_type: OrderType
     quantity: int
-    execution_rule: Optional[ExecutionRule] = None
     limit_price: Optional[int] = None
+    execution_rule: Optional[ExecutionRule] = None
 
     def __post_init__(self):
         pass
