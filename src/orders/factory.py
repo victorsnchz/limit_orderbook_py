@@ -1,9 +1,9 @@
 # product = order
 # concrete = limit / market orders
 
-from orders.order import Order, OrderID, OrderSpec
+from src.orders.order import Order, OrderID, OrderSpec
 from abc import ABC, abstractmethod
-from bookkeeping.custom_types import OrderType, Side, ExecutionRule
+from src.bookkeeping.custom_types import OrderType, Side, ExecutionRule
 from src.orders.order_id_generator import OrderIdGenerator
 
 
