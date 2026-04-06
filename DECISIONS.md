@@ -2,7 +2,7 @@ Design Decisions
 
 Recorded befor implementation begins on fix/core-refactor.
 
-D1. OrderID Generation
+## D1. OrderID Generation
 
 Decision: monotonically incrementing atomic counter, global to session.
 
@@ -37,7 +37,7 @@ Miscellaneous:
 - real exchanges generate sequence numbers in matching engine at ingestion (not by client)
 - C++: implement using std::atomic<uint64_t>
 
-D2. is_empty Convention
+## D2. is_empty Convention
 
 Decision: is_empty is a @property everywhere
 
@@ -48,7 +48,7 @@ Rationale:
 
 Both BookSide.is_empty and OrdersQueue.is_empty satisfy these conditions.
 
-D3. Price Level Naming
+## D3. Price Level Naming
 
 Decision: public interface uses levels. Internal data structure class retains name OrdersQueue.
 
@@ -67,7 +67,7 @@ Naming map
 - delete price level: BookSide.delete_level(price)
 - internal queue class: OrdersQueue
 
-D4. Price Representation: Integer Ticks
+## D4. Price Representation: Integer Ticks
 
 Decision: order book operates entirely in integer ticks. Decimal prices only used at boundary (input/output).
 
@@ -91,3 +91,30 @@ def to_decimal(ticks: int) -> float:
 
 Rule: limit_price in OrderSpec is int. ALl price comparisons in BookSide and OrderExecution operate on int. Conversion to decimal happens only at display/output boundaries.
 
+## D5 — Price Level State Representation
+
+**Decision:** `BookSide.get_states()` returns `dict[int, LevelState]` where
+`LevelState` is a frozen dataclass with three fields.
+
+**Rejected alternative:** tuple `(volume, participants)` — opaque, not
+self-documenting, and discards order count which is useful for simulation
+analysis.
+
+**Implementation:**
+```python
+@dataclass(frozen=True)
+class LevelState:
+    total_volume: int
+    order_count: int
+    participant_count: int
+```
+
+**Location:** `src/bookkeeping/custom_types.py` — alongside other domain
+types.
+
+**Consequences:**
+- `BookSide.get_states()` return type changes to `dict[int, LevelState]`
+- `BookSide.get_top_state()` same change
+- `Saver.orderbook_state_to_csv()` must unpack `LevelState` fields
+- All test assertions update from `states[price][0]` to
+  `states[price].total_volume`
