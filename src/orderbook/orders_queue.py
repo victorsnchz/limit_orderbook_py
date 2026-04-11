@@ -1,5 +1,5 @@
 import collections
-from orders.order import Order
+from src.orders.order import Order
 
 
 class OrdersQueue:
