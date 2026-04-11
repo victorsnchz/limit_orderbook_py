@@ -1,21 +1,21 @@
-from orders.order import Order
-from orderbook.orderbook import OrderBook
+from src.orders.order import Order
+from src.orderbook.orderbook import OrderBook
 
-from bookkeeping.files_manager import write_dict_to_csv
+from src.bookkeeping.files_manager import write_dict_to_csv
 import os
 import datetime
 import csv
 
-class Saver:
 
+class Saver:
     """
     Save orderbook states in CSV files.
     """
 
     def __init__(self, data_directory: str = None):
-        
+
         if data_directory is None:
-            self._data_directory = f'{os.path.abspath(os.path.dirname(__file__))}/..'
+            self._data_directory = f"{os.path.abspath(os.path.dirname(__file__))}/.."
 
         else:
             self._data_directory = data_directory
@@ -28,59 +28,53 @@ class Saver:
         """
         pass
 
-    def orderbook_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:        
-
+    def orderbook_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:
         """
         Save order book state in CSVs: separate bids and asks.
         """
 
-        date = self.now.date().strftime('%Y_%m_%d')
-        
+        date = self.now.date().strftime("%Y_%m_%d")
+
         if path is None:
-            orderbook_state_dir = f'{self._data_directory}/orderbook_state_dir/{date}' 
+            orderbook_state_dir = f"{self._data_directory}/orderbook_state_dir/{date}"
         else:
-            orderbook_state_dir = f'{self._data_directory}/{path}'
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+            orderbook_state_dir = f"{self._data_directory}/{path}"
+
         if not os.path.exists(orderbook_state_dir):
             os.makedirs(orderbook_state_dir)
 
-        bids_state, asks_state = orderbook.get_orderbook_state()
+        bids_state, asks_state = orderbook.get_state()
 
-        with open(f'{orderbook_state_dir}/bid.csv', 'w') as csv_file:
-            
+        with open(f"{orderbook_state_dir}/bid.csv", "w") as csv_file:
             writer = csv.writer(csv_file)
             write_dict_to_csv(writer, bids_state)
 
-        with open(f'{orderbook_state_dir}/ask.csv', 'w') as csv_file:
-            
+        with open(f"{orderbook_state_dir}/ask.csv", "w") as csv_file:
             writer = csv.writer(csv_file)
             write_dict_to_csv(writer, asks_state)
 
-    def top_of_book_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:        
-
+    def top_of_book_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:
         """
         Save top of book state in CSVs: separate bids and asks.
         """
 
-        date = self.now.date().strftime('%Y_%m_%d')
+        date = self.now.date().strftime("%Y_%m_%d")
 
         if path is None:
-            top_of_book_states_dir = f'{self._data_directory}/top_of_book_states/{date}' 
+            top_of_book_states_dir = f"{self._data_directory}/top_of_book_states/{date}"
         else:
-            top_of_book_states_dir = f'{self._data_directory}/{path}' 
-        
+            top_of_book_states_dir = f"{self._data_directory}/{path}"
+
         if not os.path.exists(top_of_book_states_dir):
             os.makedirs(top_of_book_states_dir)
 
         top_bid_state, top_ask_state = orderbook.get_top_of_book_state()
-        timestamp = self.now.time().strftime('%H_%M_%S')
+        timestamp = self.now.time().strftime("%H_%M_%S")
 
-        with open(f'{top_of_book_states_dir}/bid_{timestamp}.csv', 'w') as csv_file:
-            
+        with open(f"{top_of_book_states_dir}/bid_{timestamp}.csv", "w") as csv_file:
             writer = csv.writer(csv_file)
             write_dict_to_csv(writer, top_bid_state)
-        
-        with open(f'{top_of_book_states_dir}/ask_{timestamp}.csv', 'w') as csv_file:
-            
+
+        with open(f"{top_of_book_states_dir}/ask_{timestamp}.csv", "w") as csv_file:
             writer = csv.writer(csv_file)
             write_dict_to_csv(writer, top_ask_state)
