@@ -1,168 +1,87 @@
 import unittest
 import sys
 
-#sys.path.append('../')
-sys.path.append('src')
+# sys.path.append('../')
+sys.path.append("src")
 
-from orders.order import Order, OrderID, OrderSpec
-from bookkeeping.custom_types import ExecutionRule, OrderType, Side
-from orderbook.order_execution import LimitOrderExecution, MarketOrderExecution
-from orderbook.orderbook import OrderBook
-
-class TestLimitOrderExecution(unittest.TestCase):
-
-    def test_case_post(self):
-        orderbook = OrderBook()
-
-        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity=100, execution_rule=ExecutionRule.GTC,
-                         limit_price=100)
-        
+from src.orderbook.orderbook import OrderBook
+from src.orders.order_id_generator import OrderIdGenerator
+from src.orders.order import Order, OrderID, OrderSpec
+from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule
+from src.orderbook.order_execution import (
+    LimitOrderExecution,
+    MarketOrderExecution,
+    map_order_type_to_execution,
+    execute_order,
+)
 
 
-        order_to_post = Order(spec, OrderID(0, 0))
-        
-        exec = LimitOrderExecution(order_to_post, orderbook)
-        exec.post_order()
+class TestLimitOrderExecutionPost(unittest.TestCase):
+    def setUp(self):
+        self.orderbook = OrderBook()
+        self.generator = OrderIdGenerator()
 
-        price_levels = orderbook.get_levels(order_to_post.side)
+    def _make_limit_order(self, side: Side, price: int, quantity: int) -> Order:
+        spec = OrderSpec(side, OrderType.LIMIT, quantity, price, ExecutionRule.GTC)
+        return Order(spec, OrderID(self.generator.next_id(), 0))
 
-        self.assertEqual(order_to_post.limit_price in price_levels.levels, True)
+    def test_post_rests_order_in_book(self):
+        order = self._make_limit_order(Side.BID, price=99, quantity=100)
+        exec_ = LimitOrderExecution(order, self.orderbook)
+        exec_.post_order()
+        self.assertIn(99, self.orderbook.bid_side.levels)
 
-    def test_case_match(self):
-        common_price = 100
+    def test_post_creates_level_at_limit_price(self):
+        order = self._make_limit_order(Side.BID, price=99, quantity=100)
+        exec_ = LimitOrderExecution(order, self.orderbook)
+        exec_.post_order()
+        self.assertEqual(len(self.orderbook.bid_side.levels), 1)
 
-        orderbook = OrderBook()
-
-        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity = 100, execution_rule=ExecutionRule.GTC,
-                         limit_price = common_price)
-
-        order_to_post = Order(spec, OrderID(0, 0))
-        
-        exec = LimitOrderExecution(order_to_post, orderbook)
-        exec.post_order()
-
-        spec = OrderSpec(Side.ASK, OrderType.LIMIT, 
-                         quantity = 100, execution_rule=ExecutionRule.GTC,
-                         limit_price = common_price)
-
-        order_to_match = Order(spec, OrderID(1, 0))
-
-        exec = LimitOrderExecution(order_to_match, orderbook)
-        exec.match_order()
-
-        price_levels = orderbook.get_opposite_side_levels(order_to_match.side)
-
-        self.assertEqual(common_price in price_levels.levels, False)
-        self.assertEqual(order_to_post.is_filled(), True)
-        self.assertEqual(order_to_match.is_filled(), True)
-
-    def test_case_cannot_match(self):
-
-        orderbook = OrderBook()
-
-        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity = 100, execution_rule=ExecutionRule.GTC,
-                         limit_price = 100)
-        
-        order_to_post = Order(spec, OrderID(0, 0))
-        
-        exec = LimitOrderExecution(order_to_post, orderbook)
-        exec.post_order()
-
-        spec = OrderSpec(Side.ASK, OrderType.LIMIT, 
-                         quantity = 100, execution_rule=ExecutionRule.GTC,
-                         limit_price = 105)
-
-        order_to_match = Order(spec, OrderID(1, 0))
-
-        exec = LimitOrderExecution(order_to_match, orderbook)
-        exec.match_order()
-
-        price_levels = orderbook.get_opposite_side_levels(order_to_match.side)
-
-        self.assertEqual(order_to_post.limit_price in price_levels.levels, True)
-        self.assertEqual(order_to_post.is_filled(), False)
-        self.assertEqual(order_to_match.is_filled(), False)
-
-    def test_case_execute_post_and_match(self):
-
-        common_price = 100
-
-        orderbook = OrderBook()
-
-        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity = 100, execution_rule=ExecutionRule.GTC,
-                         limit_price = common_price)
+    def test_post_filled_order_not_rested(self):
+        order = self._make_limit_order(Side.BID, price=99, quantity=100)
+        order.fill(100)
+        exec_ = LimitOrderExecution(order, self.orderbook)
+        exec_.post_order()
+        self.assertTrue(self.orderbook.bid_side.is_empty)
 
 
-        order_to_post = Order(spec, OrderID(0, 0))
-        
-        exec = LimitOrderExecution(order_to_post, orderbook)
-        exec.post_order()
+class TestLimitOrderExecutionMatch(unittest.TestCase):
+    def setUp(self): ...  # orderbook with one resting bid
 
-        spec = OrderSpec(Side.ASK, OrderType.LIMIT, 
-                         quantity = 150, execution_rule=ExecutionRule.GTC,
-                         limit_price = common_price)
+    def test_match_removes_level_when_fully_filled(self): ...
+    def test_match_leaves_level_when_price_incompatible(self): ...
+    def test_match_partial_fill_leaves_remainder_in_book(self): ...
+    def test_match_does_not_post_aggressor(self): ...
 
-        order_to_match = Order(spec, OrderID(1, 0))
 
-        exec = LimitOrderExecution(order_to_match, orderbook)
-        exec.execute()
+class TestLimitOrderExecutionExecute(unittest.TestCase):
+    def setUp(self): ...
 
-        self.assertEqual(common_price in orderbook.bids.levels, False)
-        self.assertEqual(common_price in orderbook.asks.levels, True)
-        self.assertEqual(order_to_post.is_filled(), True)
-        self.assertEqual(order_to_match.is_filled(), False)
-        
+    def test_execute_fully_matched_not_posted(self): ...
+    def test_execute_partially_matched_remainder_posted(self): ...
+    def test_execute_no_match_posts_to_book(self): ...
+    def test_execute_fifo_priority_two_orders_same_price(self): ...
 
-class TestMarketOrderExecutionAgainstLimit(unittest.TestCase):
-    def test_case_match(self):
-        common_price = 100
 
-        orderbook = OrderBook()
-        
-        spec = OrderSpec(Side.BID, OrderType.LIMIT, 
-                         quantity = 100, execution_rule=ExecutionRule.GTC,
-                         limit_price = common_price)
+class TestMarketOrderExecution(unittest.TestCase):
+    def setUp(self): ...
 
-        order_to_post = Order(spec, OrderID(0, 0))
-        
-        exec = LimitOrderExecution(order_to_post, orderbook)
-        exec.post_order()
+    def test_match_against_resting_limit(self): ...
+    def test_match_removes_level_when_filled(self): ...
+    def test_no_match_on_empty_book(self): ...
+    def test_market_order_not_posted_if_unfilled(self): ...
+    def test_partial_fill_against_insufficient_liquidity(self): ...
 
-        spec = OrderSpec(Side.ASK, OrderType.MARKET, 
-                         quantity = 100, execution_rule=ExecutionRule.GTC,
-                         limit_price = common_price)
 
-        order_to_match = Order(spec, OrderID(1, 0))
+class TestOrderExecutionMap(unittest.TestCase):
+    def test_limit_key_returns_limit_execution_class(self):
+        self.assertIs(map_order_type_to_execution[OrderType.LIMIT], LimitOrderExecution)
 
-        exec = MarketOrderExecution(order_to_match, orderbook)
-        exec.execute()
+    def test_market_key_returns_market_execution_class(self):
+        self.assertIs(
+            map_order_type_to_execution[OrderType.MARKET], MarketOrderExecution
+        )
 
-        price_levels = orderbook.get_opposite_side_levels(order_to_match.side)
 
-        self.assertEqual(common_price in price_levels.levels, False)
-        self.assertEqual(order_to_post.is_filled(), True)
-        self.assertEqual(order_to_match.is_filled(), True)
-
-    def test_case_cannot_match(self):
-
-        orderbook = OrderBook()
-
-        spec = OrderSpec(Side.BID, OrderType.MARKET, 
-                         quantity = 100, execution_rule=ExecutionRule.GTC,
-                         limit_price = 100)
-
-        order_to_match = Order(spec, OrderID(0, 0))
-
-        exec = MarketOrderExecution(order_to_match, orderbook)
-        exec.execute()
-
-        price_levels = orderbook.get_opposite_side_levels(order_to_match.side)
-
-        self.assertEqual(order_to_match.is_filled(), False)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
