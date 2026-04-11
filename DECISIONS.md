@@ -118,3 +118,36 @@ types.
 - `Saver.orderbook_state_to_csv()` must unpack `LevelState` fields
 - All test assertions update from `states[price][0]` to
   `states[price].total_volume`
+
+## D6 — OrderBook and OrderExecution Separation
+
+**Decision:** `OrderBook` and `OrderExecution` remain in separate modules.
+
+**Rationale:**
+- `OrderBook` is a data structure — stores orders, organises by price and
+  side, answers state queries. No matching logic.
+- `OrderExecution` is an algorithm — implements price-time priority matching,
+  limit vs market rules, post vs cancel decisions. Operates on the orderbook
+  but is not part of it.
+
+**Benefits:**
+- Matching algorithms are swappable without touching the data structure.
+  A future `IOCExecution` or `FillOrKillExecution` implements a new class
+  against the same `OrderBook` interface.
+- `OrderBook` and `OrderExecution` are independently testable.
+- Mirrors real exchange architecture — the LOB data structure and matching
+  engine are always distinct components.
+
+**Known limitation — direct mutation:**
+`OrderExecution` currently reaches into `OrderBook` and mutates it directly
+via `post_order`, `delete_level` etc. In a more defensive design, `OrderBook`
+would expose a submission interface and execution would go through it rather
+than manipulating internals directly.
+
+**TODO**:
+- for now keep direct mutation
+- when working fill event, rework the orderbook-execution interface
+
+**C++ note:** this separation maps directly to the C++ design —
+`LimitOrderBook` (data) and `MatchingEngine` (algorithm) will be distinct
+classes.
