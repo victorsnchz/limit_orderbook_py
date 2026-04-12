@@ -13,7 +13,7 @@ class BookSide(ABC):
     """
 
     def __init__(self):
-        self.levels = SortedDict()
+        self.levels: SortedDict[int, OrdersQueue] = SortedDict()
 
     @property
     def is_empty(self) -> bool:
