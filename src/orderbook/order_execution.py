@@ -61,7 +61,7 @@ class LimitOrderExecution(OrderExecution):
     def execute(self) -> None:
 
         self._match()
-        self._post_order()
+        self.post_order()
 
     def can_match_order(self, opposite_price_levels):
 
