@@ -5,133 +5,194 @@ sys.path.append("src")
 
 from src.orderbook.orderbook import OrderBook
 from src.orders.order import Order, OrderID, OrderSpec
-from src.bookkeeping.custom_types import Side, ExecutionRule, OrderType
+from src.bookkeeping.custom_types import Side, ExecutionRule, OrderType, LevelState
 from src.orderbook.book_side import BidSide, AskSide
 from src.orderbook.order_execution import LimitOrderExecution
-
+from src.orders.order_id_generator import OrderIdGenerator
 # blend of unit-testing and integration testing
 
 
-@unittest.skip
-class TestOrderbook(unittest.TestCase):
-    def test_case_get_side(self):
+class TestOrderBookRouting(unittest.TestCase):
+    def setUp(self):
+        self.orderbook = OrderBook()
 
-        orderbook = OrderBook()
-        side_to_get = Side.BID
+    def test_get_book_side_returns_bid_side(self):
+        side = self.orderbook.get_book_side(Side.BID)
+        self.assertIsInstance(side, BidSide)
 
-        side = orderbook.get_levels(side_to_get)
+    def test_get_book_side_returns_ask_side(self):
+        side = self.orderbook.get_book_side(Side.ASK)
+        self.assertIsInstance(side, AskSide)
 
-        self.assertEqual(type(side), BidSide)
+    def test_get_opposite_book_side_bid_returns_ask(self):
+        side = self.orderbook.get_opposite_book_side(Side.BID)
+        self.assertIsInstance(side, AskSide)
 
-    def test_case_get_opposite_side(self):
+    def test_get_opposite_book_side_ask_returns_bid(self):
+        side = self.orderbook.get_opposite_book_side(Side.ASK)
+        self.assertIsInstance(side, BidSide)
 
-        orderbook = OrderBook()
-        side_to_get = Side.BID
+    def test_get_book_side_invalid_raises(self):
+        with self.assertRaises(TypeError):
+            self.orderbook.get_book_side("BID")
 
-        side = orderbook.get_opposite_side_levels(side_to_get)
+    def test_get_opposite_book_side_invalid_raises(self):
+        with self.assertRaises(TypeError):
+            self.orderbook.get_opposite_book_side("BID")
 
-        self.assertEqual(type(side), AskSide)
 
-    def test_case_get_bid_ask_mid(self):
+class TestOrderBookBidAskMid(unittest.TestCase):
+    def setUp(self):
+        self.orderbook = OrderBook()
+        self.generator = OrderIdGenerator()
 
-        orderbook = OrderBook()
-
-        order_spec = OrderSpec(
-            Side.BID,
-            OrderType.LIMIT,
-            quantity=100,
-            execution_rule=ExecutionRule.GTC,
-            limit_price=100,
+    def test_get_bid_ask_mid(self):
+        resting_bid = _post_order(
+            self.generator, self.orderbook, Side.BID, price=99, quantity=100
+        )
+        resting_ask = _post_order(
+            self.generator, self.orderbook, Side.ASK, price=100, quantity=100
         )
 
-        order1 = Order(order_spec, OrderID(0, 0))
+        bid, ask, mid = self.orderbook.get_bid_ask_mid()
 
-        order_spec = OrderSpec(
-            Side.ASK,
-            OrderType.LIMIT,
-            quantity=100,
-            execution_rule=ExecutionRule.GTC,
-            limit_price=101,
-        )
+        self.assertEqual(bid, resting_bid.limit_price)
+        self.assertEqual(ask, resting_ask.limit_price)
+        self.assertEqual(mid, (resting_bid.limit_price + resting_ask.limit_price) / 2)
 
-        order2 = Order(order_spec, OrderID(1, 0))
+    def test_get_bid_ask_mid_empty_book_raises(self):
+        with self.assertRaises(RuntimeError):
+            self.orderbook.get_bid_ask_mid()
 
-        exec = LimitOrderExecution(order1, orderbook)
-        exec.post_order()
+    def test_get_bid_ask_mid_no_bids_raises(self):
+        _post_order(self.generator, self.orderbook, Side.ASK, price=100, quantity=100)
+        with self.assertRaises(RuntimeError):
+            self.orderbook.get_bid_ask_mid()
 
-        exec = LimitOrderExecution(order2, orderbook)
-        exec.post_order()
-
-        bid, ask, mid = orderbook.get_bid_ask_mid()
-
-        self.assertEqual((bid, ask, mid), (100, 101, 100.5))
-
-    def test_get_orderbook_state_two_sides(self):
-
-        orderbook = _build_multiple_states_book(
-            mid=100, half_spread=1, quantity=100, depth=2
-        )
-
-        states = orderbook.get_orderbook_state()
-
-        target_bids = {101: (100, 1), 102: (100, 1)}
-        target_asks = {99: (100, 1), 98: (100, 1)}
-
-        self.assertDictEqual(states[0], target_bids)
-        self.assertDictEqual(states[1], target_asks)
-
-    def test_get_orderbook_top_of_book_state(self):
-
-        orderbook = OrderBook()
-
-        orderbook = _build_multiple_states_book(
-            mid=100, half_spread=1, quantity=100, depth=1
-        )
-
-        states = orderbook.get_top_state()
-
-        target_bids = {99: (100, 1)}
-        target_asks = {101: (100, 1)}
-
-        self.assertDictEqual(states[0], target_bids)
-        self.assertDictEqual(states[1], target_asks)
+    def test_get_bid_ask_mid_no_asks_raises(self):
+        _post_order(self.generator, self.orderbook, Side.BID, price=100, quantity=100)
+        with self.assertRaises(RuntimeError):
+            self.orderbook.get_bid_ask_mid()
 
 
-def _build_multiple_states_book(
-    mid: int = 100, half_spread: int = 1, quantity: int = 100, depth: int = 1
-) -> OrderBook:
+class TestOrderBookStates(unittest.TestCase):
+    def setUp(self):
+        self.orderbook = _build_book(100, 0.5, quantity=100, depth=2)
 
+    def test_get_states_returns_tuple_of_two_dicts(self):
+        result = self.orderbook.get_states()
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        for state in result:
+            self.assertIsInstance(state, dict)
+
+    def test_get_states_returns_level_state(self):
+        bids, asks = self.orderbook.get_states()
+        for bid_state, ask_state in zip(bids.values(), asks.values()):
+            self.assertIsInstance(bid_state, LevelState)
+            self.assertIsInstance(ask_state, LevelState)
+
+    def get_states_first_element_is_bids(self):
+        bids, _ = self.orderbook.get_states()
+        for price in bids:
+            self.assertIn(price, self.orderbook.bid_side.levels)
+
+    def get_states_second_element_is_asks(self):
+        _, asks = self.orderbook.get_states()
+        for price in asks:
+            self.assertIn(price, self.orderbook.ask_side.levels)
+
+    @unittest.skip("refactor to return empty dict")
+    def test_get_states_empty_book_raises(self):
+        empty = OrderBook()
+        with self.assertRaises(IndexError):
+            empty.get_states()
+
+    def test_get_top_state_returns_tuple_of_two_dicts(self):
+        result = self.orderbook.get_top_state()
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        for state in result:
+            self.assertIsInstance(state, dict)
+
+    def test_get_top_state_returns_level_state(self):
+        bid_state, ask_state = self.orderbook.get_top_state()
+        self.assertIsInstance(next(iter(bid_state.values())), LevelState)
+        self.assertIsInstance(next(iter(ask_state.values())), LevelState)
+
+    def test_get_top_state_returns_one_level_each_side(self):
+
+        bids, asks = self.orderbook.get_top_state()
+
+        self.assertEqual(len(bids), 1)
+        self.assertEqual(len(asks), 1)
+
+    def test_get_top_state_bid_is_highest(self):
+        bids, _ = self.orderbook.get_top_state()
+        all_bid_prices = list(self.orderbook.bid_side.levels.keys())
+        self.assertIn(max(all_bid_prices), bids)
+
+    def test_get_top_state_ask_is_lowest(self):
+        _, asks = self.orderbook.get_top_state()
+        all_ask_prices = list(self.orderbook.ask_side.levels.keys())
+        self.assertIn(min(all_ask_prices), asks)
+
+
+class TestOrderBookGetVolumes(unittest.TestCase):
+    def setUp(self):
+        self.orderbook = _build_book(100, 0.5, 100, 2)
+
+    def test_get_volumes_returns_tuple_of_two_of_dicts(self):
+        result = self.orderbook.get_volumes()
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        for state in result:
+            self.assertIsInstance(state, dict)
+
+    def test_get_volumes_empty_book_returns_empty_dicts(self):
+        bid_vols, ask_vols = OrderBook().get_volumes()
+        self.assertEqual(bid_vols, {})
+        self.assertEqual(ask_vols, {})
+
+
+def _make_limit_order(
+    generator: OrderIdGenerator, side: Side, price: int, quantity: int
+) -> Order:
+    spec = OrderSpec(side, OrderType.LIMIT, quantity, price, ExecutionRule.GTC)
+    return Order(spec, OrderID(generator.next_id(), 0))
+
+
+def _build_book(mid: float, half_spread: float, quantity: int, depth: int) -> OrderBook:
     orderbook = OrderBook()
-
-    bid_orders, ask_orders = [], []
-
-    for i in range(1, depth):
-        bid_specs = OrderSpec(
-            Side.BID,
-            OrderType.LIMIT,
-            quantity=quantity,
-            execution_rule=ExecutionRule.GTC,
-            limit_price=mid - i,
+    generator = OrderIdGenerator()
+    for i in range(1, depth + 1):
+        resting_bid = _make_limit_order(
+            generator, Side.BID, price=mid - i * half_spread, quantity=quantity
+        )
+        resting_ask = _make_limit_order(
+            generator, Side.ASK, price=mid + i * half_spread, quantity=quantity
         )
 
-        ask_specs = OrderSpec(
-            Side.ASK,
-            OrderType.LIMIT,
-            quantity=100,
-            execution_rule=ExecutionRule.GTC,
-            limit_price=100 + i,
-        )
-
-        bid_orders.append(Order(bid_specs, OrderID(depth + i + 1, 0)))
-        ask_orders.append(Order(ask_specs, OrderID(2 * depth + i + 1, 0)))
-
-    orders = bid_orders + ask_orders
-
-    for order in orders:
-        order_exec = LimitOrderExecution(order, orderbook)
-        order_exec.execute()
-
+        LimitOrderExecution(resting_bid, orderbook).post_order()
+        LimitOrderExecution(resting_ask, orderbook).post_order()
     return orderbook
+
+
+def _make_market_order(generator: OrderIdGenerator, side: Side, quantity: int) -> Order:
+    spec = OrderSpec(side, OrderType.MARKET, quantity)
+    return Order(spec, OrderID(generator.next_id(), 0))
+
+
+def _post_order(
+    generator: OrderIdGenerator,
+    orderbook: OrderBook,
+    side: Side,
+    price: int,
+    quantity: int,
+) -> Order:
+    order = _make_limit_order(generator, side, price, quantity)
+    LimitOrderExecution(order, orderbook).post_order()
+    return order
 
 
 if __name__ == "__main__":
