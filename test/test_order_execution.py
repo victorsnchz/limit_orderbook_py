@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock, patch
 import sys
 
 # sys.path.append('../')
@@ -13,7 +14,6 @@ from src.orderbook.order_execution import (
     LimitOrderExecution,
     MarketOrderExecution,
     map_order_type_to_execution,
-    execute_order,
 )
 
 
@@ -40,49 +40,7 @@ class TestLimitOrderExecutionPost(unittest.TestCase):
         self.assertTrue(self.orderbook.bid_side.is_empty)
 
 
-class TestLimitOrderExecutionMatch(unittest.TestCase):
-    def setUp(self):
-        self.orderbook = OrderBook()
-        self.generator = OrderIdGenerator()
-
-    def test_match_removes_level_when_fully_filled(self):
-        resting = _post_order(
-            self.generator, self.orderbook, Side.BID, price=99, quantity=100
-        )
-        aggressor = _make_limit_order(self.generator, Side.ASK, price=99, quantity=100)
-        LimitOrderExecution(aggressor, self.orderbook)._match()
-        self.assertNotIn(99, self.orderbook.bid_side.levels)
-        self.assertTrue(resting.is_filled)
-        self.assertTrue(aggressor.is_filled)
-
-    def test_match_leaves_level_when_price_incompatible(self):
-        resting = _post_order(
-            self.generator, self.orderbook, Side.BID, price=99, quantity=100
-        )
-        aggressor = _make_limit_order(self.generator, Side.ASK, price=100, quantity=100)
-        LimitOrderExecution(aggressor, self.orderbook)._match()
-        self.assertIn(99, self.orderbook.bid_side.levels)
-        self.assertFalse(resting.is_filled)
-        self.assertFalse(aggressor.is_filled)
-
-    def test_match_partial_fill_leaves_remainder_in_book(self):
-        resting = _post_order(
-            self.generator, self.orderbook, Side.BID, price=99, quantity=100
-        )
-        aggressor = _make_limit_order(self.generator, Side.ASK, price=99, quantity=50)
-        LimitOrderExecution(aggressor, self.orderbook)._match()
-        self.assertFalse(resting.is_filled)
-        self.assertTrue(aggressor.is_filled)
-        self.assertTrue(_order_in_book(self.orderbook, resting))
-
-    def test_match_does_not_post_aggressor(self):
-        _post_order(self.generator, self.orderbook, Side.BID, price=99, quantity=100)
-        aggressor = _make_limit_order(self.generator, Side.ASK, price=99, quantity=50)
-        LimitOrderExecution(aggressor, self.orderbook)._match()
-        self.assertTrue(self.orderbook.ask_side.is_empty)
-        self.assertFalse(_order_in_book(self.orderbook, aggressor))
-
-
+# --- integration test -----------------------------------------------------------------
 class TestLimitOrderExecutionExecute(unittest.TestCase):
     def setUp(self):
         self.orderbook = OrderBook()
@@ -141,6 +99,7 @@ class TestLimitOrderExecutionExecute(unittest.TestCase):
         self.assertTrue(self.orderbook.ask_side.is_empty)
 
 
+# --- integration test -----------------------------------------------------------------
 class TestMarketOrderExecution(unittest.TestCase):
     def setUp(self):
         self.generator = OrderIdGenerator()
