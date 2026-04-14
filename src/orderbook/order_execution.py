@@ -26,6 +26,7 @@ class OrderExecution:
     def _get_opposite_side(self) -> BookSide:
         return self.orderbook.get_opposite_book_side(self.order.side)
 
+    """
     def _fill_from_queue(self, queue: OrdersQueue) -> list[FilledOrder]:
 
         filled_orders = []
@@ -45,6 +46,18 @@ class OrderExecution:
 
             if resting.is_filled:
                 filled_order = queue.remove_order(resting)
+
+        return filled_orders
+    """
+
+    def _match(self) -> list[FilledOrder]:
+
+        filled_orders: list[Order] = []
+
+        opposite_side: BookSide = self._get_opposite_side()
+
+        while self._can_match_order(opposite_side):
+            filled_orders += self.orderbook.fill_top(self.order)
 
         return filled_orders
 
@@ -82,26 +95,9 @@ class LimitOrderExecution(OrderExecution):
 
         raise ValueError(f"order side {self.order.side.name} is not valid")
 
-    def _match(self):
-
-        filled_orders: list[Order] = []
-
-        opposite_side: BookSide = self._get_opposite_side()
-
-        while self._can_match_order(opposite_side):
-            top: OrdersQueue = opposite_side.top_level
-            filled_orders += self._fill_from_queue(top)
-
-            if top.is_empty:
-                opposite_side.delete_level(opposite_side.best_price)
-
     def _post_order(self) -> None:
 
-        if self.order.is_filled:
-            return
-
-        same_side_price_levels = self.orderbook.get_book_side(self.order.side)
-        same_side_price_levels.post_order(self.order)
+        self.orderbook.post_order(self.order)
 
 
 class MarketOrderExecution(OrderExecution):
@@ -125,22 +121,6 @@ class MarketOrderExecution(OrderExecution):
 
     def execute(self):
         self._match()
-
-    def _match(self) -> None:
-        """
-        Match order against top-of-book opposite side order if possible. Delete opposite top-of-book if empty.
-        """
-
-        filled_orders = []
-
-        opposite_side = self._get_opposite_side()
-
-        while self._can_match_order(opposite_side):
-            top: OrdersQueue = opposite_side.top_level
-            filled_orders += self._fill_from_queue(top)
-
-            if top.is_empty:
-                opposite_side.delete_level(opposite_side.best_price)
 
 
 map_order_type_to_execution = {
