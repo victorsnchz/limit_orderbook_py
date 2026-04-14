@@ -5,8 +5,15 @@ sys.path.append("src")
 
 from src.orderbook.orderbook import OrderBook
 from src.orders.order import Order, OrderID, OrderSpec
-from src.bookkeeping.custom_types import Side, ExecutionRule, OrderType, LevelState
+from src.bookkeeping.custom_types import (
+    Side,
+    ExecutionRule,
+    OrderType,
+    LevelState,
+    FilledOrder,
+)
 from src.orderbook.book_side import BidSide, AskSide
+from src.orderbook.orders_queue import OrdersQueue
 from src.orderbook.order_execution import LimitOrderExecution
 from src.orders.order_id_generator import OrderIdGenerator
 # blend of unit-testing and integration testing
@@ -155,6 +162,91 @@ class TestOrderBookGetVolumes(unittest.TestCase):
         self.assertEqual(ask_vols, {})
 
 
+class TestFillTop(unittest.TestCase):
+    def setUp(self):
+        self.orderbook = OrderBook()
+        self.generator = OrderIdGenerator()
+
+    def test_returns_empty_lsit_when_incoming_already_filled(self):
+        _post_order(self.generator, self.orderbook, Side.ASK, price=99, quantity=100)
+        incoming = _make_limit_order(self.generator, Side.BID, price=99, quantity=100)
+        incoming.fill(100)
+
+        result = self.orderbook.fill_top(incoming)
+        self.assertEqual(result, [])
+
+    def test_single_resting_exact_match_returns_one_filled_order(self):
+        resting = _post_order(
+            self.generator, self.orderbook, Side.ASK, price=99, quantity=100
+        )
+        incoming = _make_limit_order(self.generator, Side.BID, price=99, quantity=100)
+        result = self.orderbook.fill_top(incoming)
+
+        self.assertEqual(len(result), 1)
+        self.assertIsInstance(result[0], FilledOrder)
+
+    def test_sweep_two_resting_orders_returns_two_filled_orders(self):
+        resting1 = _post_order(
+            self.generator, self.orderbook, Side.ASK, price=99, quantity=50
+        )
+        resting2 = _post_order(
+            self.generator, self.orderbook, Side.ASK, price=99, quantity=50
+        )
+        incoming = _make_limit_order(self.generator, Side.BID, price=99, quantity=100)
+
+        result = self.orderbook.fill_top(incoming)
+
+        self.assertEqual(len(result), 2)
+
+    def test_filled_qty_exact_match(self):
+        resting = _post_order(
+            self.generator, self.orderbook, Side.ASK, price=99, quantity=100
+        )
+        incoming = _make_limit_order(self.generator, Side.BID, price=99, quantity=100)
+        result = self.orderbook.fill_top(incoming)
+        self.assertEqual(result[0].filled_qty, resting.initial_quantity)
+
+    def test_filled_qty_when_incoming_smaller_than_resting(self):
+        resting = _post_order(
+            self.generator, self.orderbook, Side.BID, price=100, quantity=100
+        )
+        incoming = _make_limit_order(self.generator, Side.ASK, price=100, quantity=40)
+        result = self.orderbook.fill_top(incoming)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(
+            result[0].filled_qty, resting.initial_quantity - resting.remaining_quantity
+        )
+
+    def test_filled_qty_when_resting_smaller_than_incoming(self):
+        resting = _post_order(
+            self.generator, self.orderbook, Side.BID, quantity=40, price=100
+        )
+        incoming = _make_limit_order(self.generator, Side.ASK, quantity=100, price=100)
+        result = self.orderbook.fill_top(incoming)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(
+            result[0].filled_qty,
+            incoming.initial_quantity - incoming.remaining_quantity,
+        )
+
+    def test_fill_qtys_sum_to_total_consumed_accross_sweep(self):
+
+        resting1 = _post_order(
+            self.generator, self.orderbook, Side.BID, quantity=50, price=100
+        )
+        resting2 = _post_order(
+            self.generator, self.orderbook, Side.BID, quantity=100, price=100
+        )
+
+        incoming = _make_limit_order(self.generator, Side.ASK, quantity=100, price=100)
+        result = self.orderbook.fill_top(incoming)
+
+        self.assertEqual(
+            sum(filled_order.filled_qty for filled_order in result),
+            incoming.initial_quantity - incoming.remaining_quantity,
+        )
+
+
 def _make_limit_order(
     generator: OrderIdGenerator, side: Side, price: int, quantity: int
 ) -> Order:
@@ -176,6 +268,10 @@ def _build_book(mid: float, half_spread: float, quantity: int, depth: int) -> Or
         LimitOrderExecution(resting_bid, orderbook)._post_order()
         LimitOrderExecution(resting_ask, orderbook)._post_order()
     return orderbook
+
+
+def _queue_at(orderbook, side: Side, price: int) -> OrdersQueue:
+    return orderbook.get_book_side(side).levels[price]
 
 
 def _make_market_order(generator: OrderIdGenerator, side: Side, quantity: int) -> Order:
