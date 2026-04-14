@@ -2,76 +2,84 @@ import os
 import csv
 import glob
 import datetime
+from src.bookkeeping.custom_types import LevelState
+from typing import Optional, Union
+from pathlib import Path
+
 
 def get_last_modified_file(path: str):
-
     """
     Return last modified file in target directory.
     """
 
-    list_of_files = glob.glob(f'{path}')
-    latest_file = max(list_of_files, key = os.path.getctime)
+    list_of_files = glob.glob(f"{path}")
+    latest_file = max(list_of_files, key=os.path.getctime)
     return latest_file
 
-def write_dict_to_csv(writer: csv.writer, state_dict: dict):
 
+def write_dict_to_csv(writer: csv.writer, state_dict: dict[int, LevelState]):
     """
     Write dict line by line in csv file.
     """
 
     for index, values in state_dict.items():
-        data = [index] + list(values)
+        data = [index] + list(astuple(values))
         writer.writerow(data)
 
-def get_results_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> tuple[str, str]:
 
+def get_results_names_bid_ask(
+    data_dir: str, test_case: str, test_name: str
+) -> tuple[str, str]:
     """
     Return name format for bid/ask where test results are stored.
     """
-    
-    timestamp = datetime.datetime.now().time().strftime('%H_%M_%S')
 
-    results_data_directory = f'{data_dir}/{test_case}/{test_name}/results'
+    timestamp = datetime.datetime.now().time().strftime("%H_%M_%S")
 
-    bid = f'{results_data_directory}/bid_{timestamp}'
-    ask = f'{results_data_directory}/ask_{timestamp}'
+    results_data_directory = f"{data_dir}/{test_case}/{test_name}/results"
+
+    bid = f"{results_data_directory}/bid_{timestamp}"
+    ask = f"{results_data_directory}/ask_{timestamp}"
 
     return bid, ask
 
-def get_target_names_bid_ask(data_dir: str, test_case: str, test_name: str) -> tuple[str, str]:
 
+def get_target_names_bid_ask(
+    data_dir: str, test_case: str, test_name: str
+) -> tuple[str, str]:
     """
     Return name format for bid/ask where test targets are stored.
     """
-    
-    targets_data_directory = f'{data_dir}/{test_case}/{test_name}/targets'
 
-    bid = f'{targets_data_directory}/bid'
-    ask = f'{targets_data_directory}/ask'
+    targets_data_directory = f"{data_dir}/{test_case}/{test_name}/targets"
+
+    bid = f"{targets_data_directory}/bid"
+    ask = f"{targets_data_directory}/ask"
 
     return bid, ask
 
-def read_csv_file(target_dir: str, file_name: str):
 
+def read_csv_file(target_dir: str, file_name: str):
     """
     Return csv file row-by-row.
     """
 
-    path = f'{target_dir}/{file_name}/'
+    path = f"{target_dir}/{file_name}/"
 
-    with open(f'{path}.csv', 'r') as csv_file:
+    with open(f"{path}.csv", "r") as csv_file:
         reader = csv.reader(csv_file)
         for row in reader:
             yield row
 
-def read_two_csvs(csv_file_A: str, csv_file_B: str, strict = True):
 
+def read_two_csvs(
+    csv_file_A: Union[str, Path], csv_file_B: Union[str, Path], strict=True
+):
     """
     Return two-csv files row-by-row simultaneously.
     """
 
     with open(csv_file_A) as csv_A, open(csv_file_B) as csv_B:
-        
         reader_A = csv.reader(csv_A)
         reader_B = csv.reader(csv_B)
 
