@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from src.bookkeeping.custom_types import ExecutionRule, Side, OrderType
+from src.bookkeeping.custom_types import ExecutionRule, Side, OrderType, OrderSnapshot
 from typing import Optional
 
 
@@ -95,3 +95,18 @@ class Order:
             )
 
         self.remaining_quantity = new_quantity
+
+    # --- order snapshot at given time ---
+
+    def snapshot(self):
+
+        return OrderSnapshot(
+            self.side,
+            self.order_type,
+            self.initial_quantity,
+            self.remaining_quantity,
+            self.order_id,
+            self.user_id,
+            self.limit_price,
+            self.execution_rule,
+        )
