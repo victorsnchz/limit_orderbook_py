@@ -28,7 +28,7 @@ class Saver:
         """
         pass
 
-    def orderbook_state_to_csv(self, orderbook: OrderBook, path: str = None) -> None:
+    def orderbook_states_to_csv(self, orderbook: OrderBook, path: str = None) -> None:
         """
         Save order book state in CSVs: separate bids and asks.
         """
@@ -43,7 +43,7 @@ class Saver:
         if not os.path.exists(orderbook_state_dir):
             os.makedirs(orderbook_state_dir)
 
-        bids_state, asks_state = orderbook.get_state()
+        bids_state, asks_state = orderbook.get_states()
 
         with open(f"{orderbook_state_dir}/bid.csv", "w") as csv_file:
             writer = csv.writer(csv_file)
@@ -68,13 +68,12 @@ class Saver:
         if not os.path.exists(top_of_book_states_dir):
             os.makedirs(top_of_book_states_dir)
 
-        top_bid_state, top_ask_state = orderbook.get_top_of_book_state()
-        timestamp = self.now.time().strftime("%H_%M_%S")
+        top_bid_state, top_ask_state = orderbook.get_top_state()
 
-        with open(f"{top_of_book_states_dir}/bid_{timestamp}.csv", "w") as csv_file:
+        with open(f"{top_of_book_states_dir}/bid.csv", "w") as csv_file:
             writer = csv.writer(csv_file)
             write_dict_to_csv(writer, top_bid_state)
 
-        with open(f"{top_of_book_states_dir}/ask_{timestamp}.csv", "w") as csv_file:
+        with open(f"{top_of_book_states_dir}/ask.csv", "w") as csv_file:
             writer = csv.writer(csv_file)
             write_dict_to_csv(writer, top_ask_state)
