@@ -54,7 +54,7 @@ class BookSide(ABC):
         """
         return self.levels[price].is_empty
 
-    def delete_level(self, price: float):
+    def delete_level(self, price: int):
         """
         Delete queue at given price.
         """

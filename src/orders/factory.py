@@ -25,7 +25,7 @@ class LimitOrderFactory(OrderFactory):
         side: Side,
         quantity: int,
         user_id: int,
-        limit_price: float,
+        limit_price: int,
         execution_rule: ExecutionRule,
     ) -> Order:
 
