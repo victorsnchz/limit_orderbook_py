@@ -5,6 +5,7 @@ import datetime
 from src.bookkeeping.custom_types import LevelState
 from typing import Optional, Union
 from pathlib import Path
+from dataclasses import dataclass
 
 
 def get_last_modified_file(path: str):
@@ -23,7 +24,7 @@ def write_dict_to_csv(writer: csv.writer, state_dict: dict[int, LevelState]):
     """
 
     for index, values in state_dict.items():
-        data = [index] + list(astuple(values))
+        data = [index] + list(dataclass.astuple(values))
         writer.writerow(data)
 
 
