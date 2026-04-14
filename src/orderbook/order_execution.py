@@ -1,9 +1,8 @@
 from src.orders.order import Order
 from src.orderbook.orderbook import OrderBook
 from src.orderbook.book_side import BookSide
-from src.bookkeeping.custom_types import Side, OrderType
+from src.bookkeeping.custom_types import Side, OrderType, FilledOrder
 from src.orderbook.orders_queue import OrdersQueue
-from src.orders.filled_order import FilledOrder
 
 # TODO
 # factory to choose execution based on order type
@@ -34,14 +33,18 @@ class OrderExecution:
         incoming = self.order
         while not incoming.is_filled and not queue.is_empty:
             resting = queue.next_order_to_execute
+            snapshot_resting = resting.snapshot()
+            snapshot_incoming = incoming.snapshot()
 
             filled = resting.fill(self.order.remaining_quantity)
 
             incoming.fill(filled)
 
+            filled_order = FilledOrder(snapshot_resting, snapshot_incoming, filled)
+            filled_orders.append(filled_order)
+
             if resting.is_filled:
                 filled_order = queue.remove_order(resting)
-                filled_orders.append(FilledOrder(order=filled_order, filled_qty=filled))
 
         return filled_orders
 
