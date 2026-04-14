@@ -1,5 +1,6 @@
 import enum
 from dataclasses import dataclass
+from typing import Optional
 
 
 class Side(enum.Enum):
@@ -16,6 +17,18 @@ class ExecutionRule(enum.Enum):
     GFD = enum.auto()
     GTC = enum.auto()
     IOC = enum.auto()
+
+
+@dataclass(frozen=True)
+class OrderSnapshot:
+    side: Side
+    order_type: OrderType
+    initial_quantity: int
+    remaining_quantity: int
+    order_id: int
+    user_id: int
+    limit_price: Optional[int] = None
+    execution_rule: Optional[ExecutionRule] = None
 
 
 @dataclass(frozen=True)
