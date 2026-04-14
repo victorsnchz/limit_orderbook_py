@@ -181,5 +181,46 @@ class TestOrderSpec(unittest.TestCase):
             )
 
 
+class TestSnapshot(unittest.TestCase):
+    def setUp(self):
+
+        self.spec = OrderSpec(
+            Side.BID,
+            OrderType.LIMIT,
+            quantity=100,
+            limit_price=100,
+            execution_rule=ExecutionRule.GTC,
+        )
+
+        self.order = Order(self.spec, OrderID(0, 0))
+
+    def test_snapshot_reflects_initial_state(self):
+        snap = self.order.snapshot()
+        self.assertEqual(snap.side, self.order.side)
+        self.assertEqual(snap.order_type, self.order.order_type)
+        self.assertEqual(snap.initial_quantity, self.order.initial_quantity)
+        self.assertEqual(snap.remaining_quantity, self.order.remaining_quantity)
+        self.assertEqual(snap.order_id, self.order.order_id)
+        self.assertEqual(snap.user_id, self.order.user_id)
+        self.assertEqual(snap.limit_price, self.order.limit_price)
+        self.assertEqual(snap.execution_rule, self.order.execution_rule)
+
+    def test_snapshot_reflects_state_after_fill(self):
+        self.order.fill(40)
+        snap = self.order.snapshot()
+        self.assertEqual(snap.remaining_quantity, self.order.remaining_quantity)
+        self.assertEqual(snap.initial_quantity, self.order.initial_quantity)
+
+    def test_snapshot_is_immutable(self):
+        snap = self.order.snapshot()
+        with self.assertRaises(Exception):
+            snap.remaining_quantity = 0
+
+    def test_snapshot_does_not_alias_order(self):
+        snap = self.order.snapshot()
+        self.order.fill(40)
+        self.assertEqual(snap.remaining_quantity, self.order.remaining_quantity + 40)
+
+
 if __name__ == "__main__":
     unittest.main()
