@@ -12,7 +12,8 @@ class OrderSpec:
     execution_rule: Optional[ExecutionRule] = None
 
     def __post_init__(self):
-        pass
+        if self.order_type == OrderType.LIMIT and self.limit_price is None:
+            raise ValueError("Limit order expected to receive a limit price not None")
 
 
 @dataclass(frozen=True)
