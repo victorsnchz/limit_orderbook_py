@@ -36,3 +36,10 @@ class LevelState:
     total_volume: int
     order_count: int
     participant_count: int
+
+
+@dataclass(frozen=True)
+class FilledOrder:
+    resting: OrderSnapshot
+    aggressor: OrderSnapshot
+    filled_qty: int
