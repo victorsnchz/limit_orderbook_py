@@ -61,9 +61,9 @@ class LimitOrderExecution(OrderExecution):
     def execute(self) -> None:
 
         self._match()
-        self.post_order()
+        self._post_order()
 
-    def can_match_order(self, opposite_price_levels):
+    def _can_match_order(self, opposite_price_levels):
 
         if self.order.is_filled:
             return False
@@ -85,14 +85,14 @@ class LimitOrderExecution(OrderExecution):
 
         opposite_side: BookSide = self._get_opposite_side()
 
-        while self.can_match_order(opposite_side):
+        while self._can_match_order(opposite_side):
             top: OrdersQueue = opposite_side.top_level
             filled_orders += self._fill_from_queue(top)
 
             if top.is_empty:
                 opposite_side.delete_level(opposite_side.best_price)
 
-    def post_order(self) -> None:
+    def _post_order(self) -> None:
 
         if self.order.is_filled:
             return
@@ -110,7 +110,7 @@ class MarketOrderExecution(OrderExecution):
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
 
-    def can_match_order(self, opposite_price_levels):
+    def _can_match_order(self, opposite_price_levels):
 
         if self.order.is_filled:
             return False
@@ -132,7 +132,7 @@ class MarketOrderExecution(OrderExecution):
 
         opposite_side = self._get_opposite_side()
 
-        while self.can_match_order(opposite_side):
+        while self._can_match_order(opposite_side):
             top: OrdersQueue = opposite_side.top_level
             filled_orders += self._fill_from_queue(top)
 
