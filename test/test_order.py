@@ -169,5 +169,17 @@ class TestOrderReduce(unittest.TestCase):
             self.order.reduce(100)
 
 
+class TestOrderSpec(unittest.TestCase):
+    def test_limit_order_no_limit_price_raises(self):
+        with self.assertRaises(ValueError):
+            OrderSpec(
+                Side.BID,
+                OrderType.LIMIT,
+                quantity=100,
+                limit_price=None,
+                execution_rule=ExecutionRule.GTC,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
