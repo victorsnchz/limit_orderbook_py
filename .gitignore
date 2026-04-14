@@ -22,7 +22,7 @@ var/
 wheels/
 share/python-wheels/
 *.egg-info/
-.installed.cfg
+.installed.cfe
 *.egg
 MANIFEST
 
@@ -162,6 +162,6 @@ cython_debug/
 #.idea/
 
 data
-.DS_Storetest_data/**/results/
+test_data/**/results/
 .DS_Store
 **/.DS_Store
