@@ -50,44 +50,41 @@ class SaverTestBase(unittest.TestCase):
         self.assertGreater(len(pairs), 0, f"{side} CSV comparison yielded no rows")
 
         for target, result in pairs:
-            self.assertEqual(target, result)
+            self.assertListEqual(target, result)
 
 
-@unittest.skip
 class TestSaverBookState(SaverTestBase):
     test_case_dir = "book_state"
 
     def test_case_one_state(self):
 
         orderbook = _build_one_state_book()
-        self.assert_saver_output(orderbook, saver.orderbook_state_to_csv, "one_state")
+        self.assert_saver_output(orderbook, saver.orderbook_states_to_csv, "one_state")
 
     def test_case_multiple_states(self):
 
         orderbook = _build_multiple_states_book()
         self.assert_saver_output(
-            orderbook, saver.orderbook_state_to_csv, "multiple_states"
+            orderbook, saver.orderbook_states_to_csv, "multiple_states"
         )
 
 
-@unittest.skip
 class TestSaverTopOfBookState(SaverTestBase):
     test_case_dir = "top_of_book_state"
 
     def test_case_one_state(self):
 
         orderbook = _build_one_state_book()
-        self.assert_saver_output(orderbook, saver.orderbook_state_to_csv, "one_state")
+        self.assert_saver_output(orderbook, saver.orderbook_states_to_csv, "one_state")
 
     def test_case_multiple_states(self):
 
         orderbook = _build_multiple_states_book()
         self.assert_saver_output(
-            orderbook, saver.orderbook_state_to_csv, "multiple_states"
+            orderbook, saver.orderbook_states_to_csv, "multiple_states"
         )
 
 
-@unittest.skip
 class TestSaverOrders(unittest.TestCase):
     pass
 
