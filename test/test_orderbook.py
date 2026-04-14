@@ -173,8 +173,8 @@ def _build_book(mid: float, half_spread: float, quantity: int, depth: int) -> Or
             generator, Side.ASK, price=mid + i * half_spread, quantity=quantity
         )
 
-        LimitOrderExecution(resting_bid, orderbook).post_order()
-        LimitOrderExecution(resting_ask, orderbook).post_order()
+        LimitOrderExecution(resting_bid, orderbook)._post_order()
+        LimitOrderExecution(resting_ask, orderbook)._post_order()
     return orderbook
 
 
@@ -191,7 +191,7 @@ def _post_order(
     quantity: int,
 ) -> Order:
     order = _make_limit_order(generator, side, price, quantity)
-    LimitOrderExecution(order, orderbook).post_order()
+    LimitOrderExecution(order, orderbook)._post_order()
     return order
 
 

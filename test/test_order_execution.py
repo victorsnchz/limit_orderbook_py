@@ -35,7 +35,7 @@ class TestLimitOrderExecutionPost(unittest.TestCase):
     def test_post_filled_order_not_rested(self):
         order = _make_limit_order(self.generator, Side.BID, price=99, quantity=100)
         order.fill(100)
-        LimitOrderExecution(order, self.orderbook).post_order()
+        LimitOrderExecution(order, self.orderbook)._post_order()
         self.assertTrue(self.orderbook.bid_side.is_empty)
 
 
@@ -223,7 +223,7 @@ def _post_order(
     quantity: int,
 ) -> Order:
     order = _make_limit_order(generator, side, price, quantity)
-    LimitOrderExecution(order, orderbook).post_order()
+    LimitOrderExecution(order, orderbook)._post_order()
     return order
 
 
