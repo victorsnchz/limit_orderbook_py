@@ -1,5 +1,7 @@
 from src.bookkeeping.custom_types import Side
 from src.orderbook.book_side import BidSide, AskSide, BookSide
+from src.bookkeeping.custom_types import FilledOrder, Side
+from src.orders.order import Order
 
 
 class OrderBook:
@@ -83,3 +85,38 @@ class OrderBook:
         )
 
         return bid_volumes, ask_volumes
+
+    def post_order(self, order: Order) -> None:
+        if order.is_filled:
+            return
+
+        self.get_book_side(order.side).post_order(order)
+
+    def cancel_order(self, order_id: int) -> None: ...
+
+    def fill_top(self, order: Order) -> list[FilledOrder]:
+
+        filled_orders = []
+        aggressor = order
+
+        opposite_book_side = self.get_opposite_book_side(aggressor.side)
+        queue = opposite_book_side.top_level
+
+        while not (aggressor.is_filled or queue.is_empty):
+            resting = queue.next_order_to_execute
+            snapshot_resting = resting.snapshot()
+            snapshot_aggressor = aggressor.snapshot()
+
+            filled_qty = resting.fill(aggressor.remaining_quantity)
+            aggressor.fill(filled_qty)
+
+            filled_order = FilledOrder(snapshot_resting, snapshot_aggressor, filled_qty)
+            filled_orders.append(filled_order)
+
+            if resting.is_filled:
+                queue.remove_order(resting)
+
+        if queue.is_empty:
+            opposite_book_side.delete_level(opposite_book_side.best_price)
+
+        return filled_orders
