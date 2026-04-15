@@ -1,11 +1,6 @@
 import unittest
-import sys
 import os
 from pathlib import Path
-
-# sys.path.append('../')
-sys.path.append("src")
-
 from src.orders.order import OrderID, Order, OrderSpec
 from src.bookkeeping.custom_types import Side, ExecutionRule, OrderType
 from src.orderbook.order_execution import LimitOrderExecution
@@ -17,7 +12,7 @@ import bookkeeping.files_manager as files_manager
 
 
 test_saver_data_dir = (
-    f"{os.path.abspath(os.path.dirname(__file__))}/../test_data/test_saver"
+    f"{os.path.abspath(os.path.dirname(__file__))}/../../test_data/test_saver"
 )
 saver = Saver(data_directory=test_saver_data_dir)
 
