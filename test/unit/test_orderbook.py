@@ -285,7 +285,6 @@ class TestGetTopState(unittest.TestCase):
         self.assertIs(asks, sentinel_ask)
 
 
-@unittest.skip("compute correct volumes")
 class TestGetVolumes(unittest.TestCase):
     def setUp(self):
         self.orderbook = OrderBook()
