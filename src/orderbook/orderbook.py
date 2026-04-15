@@ -1,6 +1,7 @@
 from src.bookkeeping.custom_types import Side
 from src.orderbook.book_side import BidSide, AskSide, BookSide
-from src.bookkeeping.custom_types import FilledOrder, Side
+from src.bookkeeping.custom_types import FilledOrder, Side, OrderType
+from src.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from src.orders.order import Order
 
 
@@ -14,6 +15,7 @@ class OrderBook:
 
         self.bid_side = BidSide()
         self.ask_side = AskSide()
+        self._order_index: dict[int, tuple[Side, int]] = {}
 
     def get_book_side(self, side: Side) -> BookSide:
         """
@@ -87,10 +89,23 @@ class OrderBook:
         return bid_volumes, ask_volumes
 
     def post_order(self, order: Order) -> None:
+
+        if order.order_type is not OrderType.LIMIT:
+            raise InvalidOrderError(
+                f"cannot post to book an order of type {order.order_type}"
+            )
+
+        if order.order_id in self._order_index:
+            raise DuplicateOrderError(f"order {order.order_id} already exists in book")
+
         if order.is_filled:
-            return
+            raise InvalidOrderError(
+                f"order {order.order_id} is filled, cannot post to book"
+            )
 
         self.get_book_side(order.side).post_order(order)
+
+        self._order_index[order.order_id] = (order.side, order.limit_price)
 
     def cancel_order(self, order_id: int) -> None: ...
 
