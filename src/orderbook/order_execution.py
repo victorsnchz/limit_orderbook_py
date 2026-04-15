@@ -4,19 +4,23 @@ from src.orderbook.book_side import BookSide
 from src.bookkeeping.custom_types import Side, OrderType, FilledOrder
 from src.orderbook.orders_queue import OrdersQueue
 
+from abc import ABC, abstractmethod
+
 # TODO
 # factory to choose execution based on order type
 
 
-class OrderExecution:
+class OrderExecution(ABC):
     """
     Parent class for order execution.
     """
 
     def __init__(self, order: Order, orderbook: OrderBook):
-        self.order = order
-        self.orderbook = orderbook
+        self.order: Order = order
+        self.orderbook: OrderBook = orderbook
+        self.filled_orders = []
 
+    @abstractmethod
     def execute(self):
         pass
 
@@ -50,16 +54,16 @@ class OrderExecution:
         return filled_orders
     """
 
-    def _match(self) -> list[FilledOrder]:
+    @abstractmethod
+    def _can_match_order(self):
+        pass
 
-        filled_orders: list[Order] = []
+    def _match(self) -> list[FilledOrder]:
 
         opposite_side: BookSide = self._get_opposite_side()
 
         while self._can_match_order(opposite_side):
-            filled_orders += self.orderbook.fill_top(self.order)
-
-        return filled_orders
+            self.filled_orders += self.orderbook.fill_top(self.order)
 
     def get_execution_report(self):
         pass
@@ -77,9 +81,10 @@ class LimitOrderExecution(OrderExecution):
     def execute(self) -> None:
 
         self._match()
-        self._post_order()
+        if not self.order.is_filled:
+            self.orderbook.post_order(self.order)
 
-    def _can_match_order(self, opposite_price_levels):
+    def _can_match_order(self, opposite_price_levels: BookSide):
 
         if self.order.is_filled:
             return False
@@ -95,10 +100,6 @@ class LimitOrderExecution(OrderExecution):
 
         raise ValueError(f"order side {self.order.side.name} is not valid")
 
-    def _post_order(self) -> None:
-
-        self.orderbook.post_order(self.order)
-
 
 class MarketOrderExecution(OrderExecution):
     """
@@ -109,7 +110,7 @@ class MarketOrderExecution(OrderExecution):
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
 
-    def _can_match_order(self, opposite_price_levels):
+    def _can_match_order(self, opposite_price_levels: BookSide):
 
         if self.order.is_filled:
             return False
