@@ -238,9 +238,8 @@ class TestGetOppositeBookSide(unittest.TestCase):
                     self.orderbook.get_opposite_book_side(bad_input)
 
     def test_symmetry(self):
-        """get_opposite twice returns the original side."""
-        first = self.orderbook.get_opposite_book_side(Side.BID)
-        # first is ask_side mock; we need to go through the real method again
+
+        self.orderbook.get_opposite_book_side(Side.BID)
         second = self.orderbook.get_opposite_book_side(Side.ASK)
         self.assertIs(second, self.orderbook.bid_side)
 
