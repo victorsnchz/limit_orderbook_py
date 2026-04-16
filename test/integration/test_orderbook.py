@@ -5,6 +5,7 @@ from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule
 from src.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from src.orders.order_id_generator import OrderIdGenerator
 from src.orderbook.book_side import BidSide, AskSide, BookSide
+from collections import defaultdict
 
 
 def _make_limit(
@@ -163,16 +164,93 @@ class TestSideAccessors(OrderBookIntegrationBase):
 
 
 class TestQueries(OrderBookIntegrationBase):
-    def test_get_bid_ask_mid_raises_when_bid_side_empty(self): ...
-    def test_get_bid_ask_mid_raises_when_ask_side_empty(self): ...
-    def test_get_bid_ask_mid_raises_when_both_empty(self): ...
-    def test_get_bid_ask_mid_returns_correct_triple(self): ...
-    def test_get_states_includes_every_level_on_both_sides(self): ...
-    def test_get_states_empty_book_returns_empty_dicts(self): ...
-    def test_get_top_state_only_contains_best_level(self): ...
-    def test_get_top_state_empty_side_returns_empty_dict(self): ...
-    def test_get_volumes_sums_per_level_correctly(self): ...
-    def test_queries_agree_with_direct_price_map_inspection(self): ...
+    def test_get_bid_ask_mid_raises_when_bid_side_empty(self):
+        resting = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting)
+        with self.assertRaises(RuntimeError):
+            self.orderbook.get_bid_ask_mid()
+
+    def test_get_bid_ask_mid_raises_when_ask_side_empty(self):
+        resting = _make_limit(self.generator, Side.BID, limit_price=100)
+        self.orderbook.post_order(resting)
+        with self.assertRaises(RuntimeError):
+            self.orderbook.get_bid_ask_mid()
+
+    def test_get_bid_ask_mid_raises_when_both_empty(self):
+        with self.assertRaises(RuntimeError):
+            self.orderbook.get_bid_ask_mid()
+
+    def test_get_bid_ask_mid_returns_correct_triple(self):
+        resting_bid = _make_limit(self.generator, Side.BID, limit_price=99)
+        self.orderbook.post_order(resting_bid)
+        resting_ask = _make_limit(self.generator, Side.ASK, limit_price=101)
+        self.orderbook.post_order(resting_ask)
+
+        self.assertTupleEqual((99, 101, 100), self.orderbook.get_bid_ask_mid())
+
+    def test_get_states_includes_every_level_on_both_sides(self):
+        resting_bid_1 = _make_limit(self.generator, Side.BID, limit_price=99)
+        resting_bid_2 = _make_limit(self.generator, Side.BID, limit_price=98)
+        self.orderbook.post_order(resting_bid_1)
+        self.orderbook.post_order(resting_bid_2)
+
+        resting_ask_1 = _make_limit(self.generator, Side.ASK, limit_price=101)
+        resting_ask_2 = _make_limit(self.generator, Side.ASK, limit_price=102)
+        self.orderbook.post_order(resting_ask_1)
+        self.orderbook.post_order(resting_ask_2)
+
+        bid_states, ask_states = self.orderbook.get_states()
+        self.assertListEqual(list(bid_states), [98, 99])
+        self.assertListEqual(list(ask_states), [101, 102])
+
+    def test_get_states_empty_book_returns_empty_dicts(self):
+        self.assertTupleEqual(self.orderbook.get_states(), ({}, {}))
+
+    def test_get_top_state_only_contains_best_level(self):
+        resting_bid_1 = _make_limit(self.generator, Side.BID, limit_price=99)
+        resting_bid_2 = _make_limit(self.generator, Side.BID, limit_price=98)
+        self.orderbook.post_order(resting_bid_1)
+        self.orderbook.post_order(resting_bid_2)
+
+        resting_ask_1 = _make_limit(self.generator, Side.ASK, limit_price=101)
+        resting_ask_2 = _make_limit(self.generator, Side.ASK, limit_price=102)
+        self.orderbook.post_order(resting_ask_1)
+        self.orderbook.post_order(resting_ask_2)
+        bid_state, ask_state = self.orderbook.get_top_state()
+        self.assertListEqual(list(bid_state), [self.orderbook.bid_side.best_price])
+        self.assertListEqual(list(ask_state), [self.orderbook.ask_side.best_price])
+
+    def test_get_top_state_empty_side_returns_empty_dict(self):
+        self.assertTupleEqual(self.orderbook.get_top_state(), ({}, {}))
+
+    def test_get_volumes_sums_per_level_correctly(self):
+
+        self.orderbook.post_order(
+            _make_limit(self.generator, Side.BID, limit_price=99, quantity=5)
+        )
+        self.orderbook.post_order(
+            _make_limit(self.generator, Side.BID, limit_price=99, quantity=3)
+        )
+        self.orderbook.post_order(
+            _make_limit(self.generator, Side.BID, limit_price=98, quantity=7)
+        )
+
+        self.orderbook.post_order(
+            _make_limit(self.generator, Side.ASK, limit_price=101, quantity=4)
+        )
+        self.orderbook.post_order(
+            _make_limit(self.generator, Side.ASK, limit_price=102, quantity=6)
+        )
+        self.orderbook.post_order(
+            _make_limit(self.generator, Side.ASK, limit_price=102, quantity=2)
+        )
+
+        bid_volumes, ask_volumes = self.orderbook.get_volumes()
+
+        self.assertEqual(bid_volumes, {99: 8, 98: 7})
+        self.assertEqual(ask_volumes, {101: 4, 102: 8})
+
+        def test_queries_match_direct_inspection(self): ...
 
 
 class TestPriceTimePriorityStructural(OrderBookIntegrationBase):
