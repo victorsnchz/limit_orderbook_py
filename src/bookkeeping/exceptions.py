@@ -1,6 +1,14 @@
-class DuplicateOrderError(Exception):
+class OrderBookError(Exception):
     pass
 
 
-class InvalidOrderError(Exception):
+class DuplicateOrderError(OrderBookError):
+    pass
+
+
+class InvalidOrderError(OrderBookError):
+    pass
+
+
+class EmptyBookSideError(OrderBookError):
     pass
