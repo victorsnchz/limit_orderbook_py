@@ -123,6 +123,24 @@ class TestPostOrder(unittest.TestCase):
             self.orderbook.post_order(order)
         self.assertNotIn(order.order_id, self.orderbook._order_index)
 
+    def test_post_bid_crosses_ask_raises(self):
+        order = _make_limit_order(side=Side.BID, limit_price=100)
+
+        self.orderbook.ask_side.best_price = 99
+        self.orderbook.ask_side.is_empty = False
+
+        with self.assertRaises(InvalidOrderError):
+            self.orderbook.post_order(order)
+
+    def test_post_ask_crosses_bid_raises(self):
+        order = _make_limit_order(side=Side.ASK, limit_price=99)
+
+        self.orderbook.bid_side.best_price = 100
+        self.orderbook.bid_side.is_empty = False
+
+        with self.assertRaises(InvalidOrderError):
+            self.orderbook.post_order(order)
+
 
 class TestOrderBookBidAskMid(unittest.TestCase):
     def setUp(self):
@@ -302,6 +320,9 @@ class TestGetVolumes(unittest.TestCase):
         bids, asks = self.orderbook.get_volumes()
         self.assertIs(bids, sentinel_bid)
         self.assertIs(asks, sentinel_ask)
+
+
+class TestFillOrder(unittest.TestCase): ...
 
 
 def _make_limit_order(
