@@ -327,6 +327,37 @@ def _make_limit_order(
     return order
 
 
+class TestGetOrder(unittest.TestCase):
+    def setUp(self):
+        self.orderbook = OrderBook()
+        self.orderbook.bid_side = MagicMock()
+        self.orderbook.ask_side = MagicMock()
+
+    def test_unknown_order_raises(self):
+        with self.assertRaises(InvalidOrderError):
+            self.orderbook.get_order(0)
+
+    def test_retrieves_from_correct_side_and_level(self):
+        sentinel_order = object()
+        self.orderbook._order_index[0] = (Side.BID, 99)
+
+        mock_queue = MagicMock()
+        mock_queue.queue = {0: sentinel_order}
+        self.orderbook.bid_side.levels = {99: mock_queue}
+        result = self.orderbook.get_order(0)
+        self.assertIs(result, sentinel_order)
+
+    def test_does_not_touch_opposite_side(self):
+        self.orderbook._order_index[1] = (Side.ASK, 100)
+
+        mock_queue = MagicMock()
+        mock_queue.queue = {1: MagicMock()}
+        self.orderbook.ask_side.levels = {100: mock_queue}
+
+        self.orderbook.get_order(1)
+        self.orderbook.bid_side.assert_not_called()
+
+
 def _make_market_order(
     order_id=1,
     side: Side = Side.BID,
