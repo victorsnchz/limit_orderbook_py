@@ -135,3 +135,13 @@ class OrderBook:
             opposite_book_side.delete_level(opposite_book_side.best_price)
 
         return filled_orders
+
+    def get_order(self, order_id: int) -> Order:
+
+        if order_id not in self._order_index:
+            raise InvalidOrderError(f"order {order_id} not in book")
+
+        side, price = self._order_index[order_id]
+        bookside = self.get_book_side(side)
+        order_queue = bookside.levels[price]
+        return order_queue.queue[order_id]
