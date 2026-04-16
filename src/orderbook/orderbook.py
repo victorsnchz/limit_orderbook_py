@@ -103,6 +103,15 @@ class OrderBook:
                 f"order {order.order_id} is filled, cannot post to book"
             )
 
+        opposite_side = self.get_opposite_book_side(order.side)
+        if not opposite_side.is_empty:
+            if (
+                order.side == Side.BID and order.limit_price >= opposite_side.best_price
+            ) or (
+                order.side == Side.ASK and order.limit_price <= opposite_side.best_price
+            ):
+                raise InvalidOrderError("post expects non-crossing orders only")
+
         self.get_book_side(order.side).post_order(order)
 
         self._order_index[order.order_id] = (order.side, order.limit_price)
