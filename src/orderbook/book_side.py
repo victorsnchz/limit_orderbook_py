@@ -2,6 +2,7 @@ from src.orderbook.orders_queue import OrdersQueue
 from src.orders.order import Order
 from src.bookkeeping.custom_types import LevelState
 from sortedcontainers import SortedDict
+from src.bookkeeping.exceptions import EmptyBookSideError
 from abc import ABC, abstractmethod
 
 
@@ -133,6 +134,8 @@ class BidSide(BookSide):
 
     @property
     def best_price(self) -> int:
+        if self.is_empty:
+            raise EmptyBookSideError(f"{type(self).__name__} is empty")
         return self.levels.keys()[-1]
 
     @property
@@ -150,6 +153,8 @@ class AskSide(BookSide):
 
     @property
     def best_price(self) -> int:
+        if self.is_empty:
+            raise EmptyBookSideError(f"{type(self).__name__} is empty")
         return self.levels.keys()[0]
 
     @property
