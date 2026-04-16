@@ -89,6 +89,10 @@ class BookSide(ABC):
         """
         Return state for top-of-book ONLY: {price: (total_volume, #participants)}
         """
+
+        if self.is_empty:
+            return {}
+
         price = self.best_price
         queue = self.top_level
 
