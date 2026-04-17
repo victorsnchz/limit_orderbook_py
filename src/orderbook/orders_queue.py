@@ -1,5 +1,6 @@
 import collections
 from src.orders.order import Order
+from src.bookkeeping.exceptions import EmptyQueueError
 
 
 class OrdersQueue:
@@ -12,7 +13,7 @@ class OrdersQueue:
     def __init__(self):
         # Python dicts preserve insertion order since 3.7
         # OrderedDict redundant BUT clarifies purpose of this data struct
-        self.queue: collections.OrderedDict[int, Order] = collections.OrderedDict()
+        self._queue: collections.OrderedDict[int, Order] = collections.OrderedDict()
 
     def add_order(self, order: Order):
         """
@@ -44,3 +45,14 @@ class OrdersQueue:
         Return next order to be matched against.
         """
         return self.queue[next(iter(self.queue))]
+
+    @property
+    def tail(self) -> Order:
+        """
+        Last order in FIFO sequence. Precondition: not empty.
+        """
+
+        if self.is_empty:
+            raise EmptyQueueError(...)
+
+        return next(reversed(self._queue.values))
