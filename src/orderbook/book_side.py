@@ -68,20 +68,7 @@ class BookSide(ABC):
         states = {}
 
         for price, queue in self.levels.items():
-            total_volume = 0
-            order_count = 0
-            participants = set()
-
-            for order in queue.queue.values():
-                total_volume += order.remaining_quantity
-                order_count += 1
-                participants.add(order.user_id)
-
-            states[price] = LevelState(
-                total_volume=total_volume,
-                order_count=order_count,
-                participant_count=len(participants),
-            )
+            states[price] = queue.get_state()
 
         return states
 
@@ -96,22 +83,7 @@ class BookSide(ABC):
         price = self.best_price
         queue = self.top_level
 
-        total_volume = 0
-        order_count = 0
-        participants = set()
-
-        for order in queue.queue.values():
-            total_volume += order.remaining_quantity
-            order_count += 1
-            participants.add(order.user_id)
-
-        return {
-            price: LevelState(
-                total_volume=total_volume,
-                order_count=order_count,
-                participant_count=len(participants),
-            )
-        }
+        return {price: queue.get_state()}
 
     def get_volumes(self) -> dict[float, int]:
         """
@@ -121,12 +93,7 @@ class BookSide(ABC):
         volumes = SortedDict()
 
         for price, queue in self.levels.items():
-            volume = 0
-
-            for order in queue.queue.values():
-                volume += order.remaining_quantity
-
-            volumes[price] = volume
+            volumes[price] = queue.get_volume()
 
         return volumes
 
