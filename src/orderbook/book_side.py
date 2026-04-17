@@ -2,7 +2,7 @@ from src.orderbook.orders_queue import OrdersQueue
 from src.orders.order import Order
 from src.bookkeeping.custom_types import LevelState
 from sortedcontainers import SortedDict
-from src.bookkeeping.exceptions import EmptyBookSideError
+from src.bookkeeping.exceptions import EmptyBookSideError, PriceLevelNotFoundError
 from abc import ABC, abstractmethod
 
 
@@ -14,7 +14,7 @@ class BookSide(ABC):
     """
 
     def __init__(self):
-        self.levels: SortedDict[int, OrdersQueue] = SortedDict()
+        self._levels: SortedDict[int, OrdersQueue] = SortedDict()
 
     @property
     def is_empty(self) -> bool:
@@ -71,6 +71,15 @@ class BookSide(ABC):
             states[price] = queue.get_state()
 
         return states
+
+    # TODO: untitest
+    def get_level(self, price: int):
+        try:
+            return self._levels[price]
+        except KeyError:
+            raise PriceLevelNotFoundError(
+                f"no level at price {price} on {type(self).__name__}"
+            )
 
     def get_top_state(self) -> dict[int, LevelState]:
         """
