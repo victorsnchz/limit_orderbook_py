@@ -12,3 +12,7 @@ class InvalidOrderError(OrderBookError):
 
 class EmptyBookSideError(OrderBookError):
     pass
+
+
+class EmptyQueueError(OrderBookError):
+    pass
