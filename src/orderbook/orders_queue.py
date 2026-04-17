@@ -20,8 +20,8 @@ class OrdersQueue:
         Add order last in queue if not already in queue.
         """
 
-        if order.order_id not in self.queue:
-            self.queue[order.order_id] = order
+        if order.order_id not in self._queue:
+            self._queue[order.order_id] = order
         else:
             raise RuntimeError(f"order id {order.order_id} already in queue")
 
@@ -30,22 +30,23 @@ class OrdersQueue:
         Pop order from queue.
         """
 
-        return self.queue.pop(order.order_id)
+        return self._queue.pop(order.order_id)
 
     @property
     def is_empty(self) -> bool:
         """
         Check if queue is empty.
         """
-        return not bool(self.queue)
+        return not bool(self._queue)
 
     @property
     def next_order_to_execute(self) -> Order:
         """
         Return next order to be matched against.
         """
-        return self.queue[next(iter(self.queue))]
+        return self._queue[next(iter(self._queue))]
 
+    # // TODO : unit tests
     @property
     def tail(self) -> Order:
         """
