@@ -1,6 +1,7 @@
 import collections
 from src.orders.order import Order
 from src.bookkeeping.exceptions import EmptyQueueError
+from src.bookkeeping.custom_types import LevelState
 
 
 class OrdersQueue:
@@ -31,6 +32,18 @@ class OrdersQueue:
         """
 
         return self._queue.pop(order.order_id)
+
+    def get_state(self) -> LevelState:
+        total_volume = 0
+        order_count = 0
+        participants = set()
+
+        for order in self._queue.values():
+            total_volume += order.remaining_quantity
+            order_count += 1
+            participants.add(order.user_id)
+
+        return LevelState(total_volume, order_count, len(participants))
 
     @property
     def is_empty(self) -> bool:
