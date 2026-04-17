@@ -21,17 +21,17 @@ class BookSide(ABC):
         """
         Check if level is empty.
         """
-        return not bool(self.levels)
+        return not bool(self._levels)
 
     def post_order(self, order: Order) -> None:
         """
         Add order to queue at approriate price level. If no level exists create it.
         """
 
-        if order.limit_price not in self.levels:
-            self.levels[order.limit_price] = OrdersQueue()
+        if order.limit_price not in self._levels:
+            self._levels[order.limit_price] = OrdersQueue()
 
-        self.levels[order.limit_price].add_order(order)
+        self._levels[order.limit_price].add_order(order)
 
     @property
     @abstractmethod
@@ -53,13 +53,13 @@ class BookSide(ABC):
         """
         Check if there exists an order queue at input price.
         """
-        return self.levels[price].is_empty
+        return self._levels[price].is_empty
 
     def delete_level(self, price: int):
         """
         Delete queue at given price.
         """
-        del self.levels[price]
+        del self._levels[price]
 
     def get_states(self) -> dict[int, LevelState]:
         """
@@ -67,7 +67,7 @@ class BookSide(ABC):
         """
         states = {}
 
-        for price, queue in self.levels.items():
+        for price, queue in self._levels.items():
             states[price] = queue.get_state()
 
         return states
@@ -101,7 +101,7 @@ class BookSide(ABC):
 
         volumes = SortedDict()
 
-        for price, queue in self.levels.items():
+        for price, queue in self._levels.items():
             volumes[price] = queue.get_volume()
 
         return volumes
@@ -116,11 +116,11 @@ class BidSide(BookSide):
     def best_price(self) -> int:
         if self.is_empty:
             raise EmptyBookSideError(f"{type(self).__name__} is empty")
-        return self.levels.keys()[-1]
+        return self._levels.keys()[-1]
 
     @property
     def top_level(self) -> OrdersQueue:
-        return self.levels.values()[-1]
+        return self._levels.values()[-1]
 
     def get_volumes(self):
         volumes = super().get_volumes()
@@ -135,8 +135,8 @@ class AskSide(BookSide):
     def best_price(self) -> int:
         if self.is_empty:
             raise EmptyBookSideError(f"{type(self).__name__} is empty")
-        return self.levels.keys()[0]
+        return self._levels.keys()[0]
 
     @property
     def top_level(self) -> OrdersQueue:
-        return self.levels.values()[0]
+        return self._levels.values()[0]
