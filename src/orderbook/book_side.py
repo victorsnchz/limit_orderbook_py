@@ -2,7 +2,11 @@ from src.orderbook.orders_queue import OrdersQueue
 from src.orders.order import Order
 from src.bookkeeping.custom_types import LevelState
 from sortedcontainers import SortedDict
-from src.bookkeeping.exceptions import EmptyBookSideError, PriceLevelNotFoundError
+from src.bookkeeping.exceptions import (
+    EmptyBookSideError,
+    PriceLevelNotFoundError,
+    OrderNotFoundError,
+)
 from abc import ABC, abstractmethod
 from typing import KeysView
 
@@ -16,6 +20,8 @@ class BookSide(ABC):
 
     def __init__(self):
         self._levels: SortedDict[int, OrdersQueue] = SortedDict()
+        # TODO: shift index responsibility to BookSide
+        # self._order_index: dict[int, int] = {}
 
     @property
     def prices(self) -> KeysView[int]:
@@ -37,6 +43,16 @@ class BookSide(ABC):
             self._levels[order.limit_price] = OrdersQueue()
 
         self._levels[order.limit_price].add_order(order)
+
+    # TODO: fix with correct indxing logic, raise exceptions
+    def get_order(self, price, order_id) -> Order:
+
+        try:
+            return self.get_level(price).get_order(order_id)
+        except:
+            raise OrderNotFoundError(
+                f"order {order_id} not found at {price} price level"
+            )
 
     @property
     @abstractmethod
