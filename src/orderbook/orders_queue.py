@@ -16,6 +16,10 @@ class OrdersQueue:
         # OrderedDict redundant BUT clarifies purpose of this data struct
         self._queue: collections.OrderedDict[int, Order] = collections.OrderedDict()
 
+    # TODO: unittest
+    def __contains__(self, order_id: int) -> bool:
+        return order_id in self._queue
+
     def add_order(self, order: Order):
         """
         Add order last in queue if not already in queue.
@@ -33,7 +37,9 @@ class OrdersQueue:
 
         return self._queue.pop(order.order_id)
 
+    # TODO : unittest
     def get_state(self) -> LevelState:
+        assert not self.is_empty, "get_state called on empty queue, invariant violation"
         total_volume = 0
         order_count = 0
         participants = set()
@@ -44,6 +50,14 @@ class OrdersQueue:
             participants.add(order.user_id)
 
         return LevelState(total_volume, order_count, len(participants))
+
+    # TODO: unittest
+    def get_volume(self) -> int:
+        volume = 0
+        for order in self._queue.values():
+            volume += order.remaining_quantity
+
+        return volume
 
     @property
     def is_empty(self) -> bool:
@@ -59,7 +73,7 @@ class OrdersQueue:
         """
         return self._queue[next(iter(self._queue))]
 
-    # // TODO : unit tests
+    # TODO : unit tests
     @property
     def tail(self) -> Order:
         """
