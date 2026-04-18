@@ -45,7 +45,6 @@ class OrdersQueue:
         assert order_id in self, "removing order not in queue"
         return self._queue.pop(order_id)
 
-    # TODO : unittest
     def get_state(self) -> LevelState:
         assert not self.is_empty, "get_state called on empty queue, invariant violation"
         total_volume = 0
@@ -59,7 +58,6 @@ class OrdersQueue:
 
         return LevelState(total_volume, order_count, len(participants))
 
-    # TODO: unittest
     def get_volume(self) -> int:
         volume = 0
         for order in self._queue.values():
@@ -90,7 +88,6 @@ class OrdersQueue:
             raise EmptyQueueError("queue is empty no order to execute")
         return self._queue[next(iter(self._queue))]
 
-    # TODO : unit tests
     @property
     def tail(self) -> Order:
         """
@@ -98,6 +95,6 @@ class OrdersQueue:
         """
 
         if self.is_empty:
-            raise EmptyQueueError(...)
+            raise EmptyQueueError("queue is empty no order to execute")
 
         return next(reversed(self._queue.values()))
