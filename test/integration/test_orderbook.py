@@ -5,6 +5,7 @@ from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule
 from src.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from src.orders.order_id_generator import OrderIdGenerator
 from src.orderbook.book_side import BidSide, AskSide, BookSide
+from src.orderbook.orders_queue import OrdersQueue
 from collections import defaultdict
 
 
@@ -58,13 +59,17 @@ class TestPosting(OrderBookIntegrationBase):
         self.assertFalse(self.orderbook.get_book_side(Side.ASK).is_empty)
 
     def test_post_multiple_same_price_same_side_preserves_fifo(self):
-
         resting1 = _make_limit(self.generator, Side.BID, limit_price=99)
         resting2 = _make_limit(self.generator, Side.BID, limit_price=99)
+        resting3 = _make_limit(self.generator, Side.BID, limit_price=99)
+
         self.orderbook.post_order(resting1)
         self.orderbook.post_order(resting2)
+        queue = self.orderbook.get_book_side(Side.BID).get_level(99)
+        self.assertIs(resting1, queue.next_order_to_execute)
+        self.orderbook.post_order(resting3)
 
-        self.orderbook.get_book_side(Side.BID)
+        self.assertIs(resting1, queue.next_order_to_execute)
 
     def test_post_multiple_different_prices_orders_levels_correctly(self):
         resting = {
@@ -283,8 +288,34 @@ class TestPriceTimePriorityStructural(OrderBookIntegrationBase):
             resting3, self.orderbook.get_book_side(Side.ASK).get_level(100).tail
         )
 
-    def test_best_bid_is_highest_posted_price(self): ...
-    def test_best_ask_is_lowest_posted_price(self): ...
+    def test_best_bid_is_highest_posted_price(self):
+        resting1 = _make_limit(self.generator, Side.BID, limit_price=99)
+        self.orderbook.post_order(resting1)
+        resting2 = _make_limit(self.generator, Side.BID, limit_price=98)
+        self.orderbook.post_order(resting2)
+        resting3 = _make_limit(self.generator, Side.BID, limit_price=97)
+        self.orderbook.post_order(resting3)
+        orders_best_price = max(
+            resting1.limit_price, resting2.limit_price, resting3.limit_price
+        )
+        self.assertEqual(
+            self.orderbook.get_book_side(Side.BID).best_price, orders_best_price
+        )
+
+    def test_best_ask_is_lowest_posted_price(self):
+        resting1 = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting1)
+        resting2 = _make_limit(self.generator, Side.ASK, limit_price=101)
+        self.orderbook.post_order(resting2)
+        resting3 = _make_limit(self.generator, Side.ASK, limit_price=102)
+        self.orderbook.post_order(resting3)
+
+        orders_best_price = min(
+            resting1.limit_price, resting2.limit_price, resting3.limit_price
+        )
+        self.assertEqual(
+            self.orderbook.get_book_side(Side.ASK).best_price, orders_best_price
+        )
 
 
 @unittest.skip("wait until implementation")
