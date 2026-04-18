@@ -17,6 +17,8 @@ class OrderBook:
         self.ask_side = AskSide()
         self._order_index: dict[int, tuple[Side, int]] = {}
 
+    # --- getters ----------------------------------------------------------------------
+
     def get_book_side(self, side: Side) -> BookSide:
         """
         Return specified book side.
@@ -88,6 +90,15 @@ class OrderBook:
 
         return bid_volumes, ask_volumes
 
+    def get_order(self, order_id: int) -> Order:
+
+        if order_id not in self._order_index:
+            raise InvalidOrderError(f"order {order_id} not in book")
+
+        side, price = self._order_index[order_id]
+
+        return self.get_book_side(side).get_order(price, order_id)
+
     def post_order(self, order: Order) -> None:
 
         if order.order_type is not OrderType.LIMIT:
@@ -144,12 +155,3 @@ class OrderBook:
             opposite_book_side.delete_level(opposite_book_side.best_price)
 
         return filled_orders
-
-    def get_order(self, order_id: int) -> Order:
-
-        if order_id not in self._order_index:
-            raise InvalidOrderError(f"order {order_id} not in book")
-
-        side, price = self._order_index[order_id]
-
-        return self.get_book_side(side).get_order(price, order_id)
