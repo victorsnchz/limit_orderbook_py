@@ -83,4 +83,4 @@ class OrdersQueue:
         if self.is_empty:
             raise EmptyQueueError(...)
 
-        return next(reversed(self._queue.values))
+        return next(reversed(self._queue.values()))
