@@ -86,6 +86,8 @@ class OrdersQueue:
         """
         Return next order to be matched against.
         """
+        if self.is_empty:
+            raise EmptyQueueError("queue is empty no order to execute")
         return self._queue[next(iter(self._queue))]
 
     # TODO : unit tests
