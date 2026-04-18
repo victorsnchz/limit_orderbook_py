@@ -4,6 +4,7 @@ from src.bookkeeping.custom_types import LevelState
 from sortedcontainers import SortedDict
 from src.bookkeeping.exceptions import EmptyBookSideError, PriceLevelNotFoundError
 from abc import ABC, abstractmethod
+from typing import KeysView
 
 
 class BookSide(ABC):
@@ -15,6 +16,10 @@ class BookSide(ABC):
 
     def __init__(self):
         self._levels: SortedDict[int, OrdersQueue] = SortedDict()
+
+    @property
+    def prices(self) -> KeysView[int]:
+        return self._levels.keys()
 
     @property
     def is_empty(self) -> bool:
