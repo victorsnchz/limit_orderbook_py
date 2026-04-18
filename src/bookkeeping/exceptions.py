@@ -27,3 +27,7 @@ class PriceLevelNotFoundError(OrderBookError):
 # --- OrdersQueue errors and exceptions ------------------------------------------------
 class EmptyQueueError(OrderBookError):
     pass
+
+
+class OrderNotFoundError(OrderBookError):
+    pass
