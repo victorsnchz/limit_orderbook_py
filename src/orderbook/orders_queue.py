@@ -1,6 +1,6 @@
 import collections
 from src.orders.order import Order
-from src.bookkeeping.exceptions import EmptyQueueError
+from src.bookkeeping.exceptions import EmptyQueueError, OrderNotFoundError
 from src.bookkeeping.custom_types import LevelState
 
 
@@ -58,6 +58,13 @@ class OrdersQueue:
             volume += order.remaining_quantity
 
         return volume
+
+    # TODO: unittest
+    def get_order(self, order_id: int) -> Order:
+        try:
+            return self._queue[order_id]
+        except KeyError:
+            raise OrderNotFoundError(f"order {order_id} not in queue")
 
     @property
     def is_empty(self) -> bool:
