@@ -151,6 +151,5 @@ class OrderBook:
             raise InvalidOrderError(f"order {order_id} not in book")
 
         side, price = self._order_index[order_id]
-        bookside = self.get_book_side(side)
-        order_queue = bookside.get_level(price)
-        return order_queue.get_order(order_id)
+
+        return self.get_book_side(side).get_order(price, order_id)
