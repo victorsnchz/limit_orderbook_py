@@ -34,12 +34,13 @@ class OrdersQueue:
         else:
             raise DuplicateOrderError(f"order id {order.order_id} already in queue")
 
-    def remove_order(self, order: Order) -> Order:
+    def remove_order(self, order_id: int) -> Order:
         """
         Pop order from queue.
         """
-
-        return self._queue.pop(order.order_id)
+        assert not self.is_empty, "remove_order raised on empty queue"
+        assert order_id in self, "removing order not in queue"
+        return self._queue.pop(order_id)
 
     # TODO : unittest
     def get_state(self) -> LevelState:
