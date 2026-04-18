@@ -54,7 +54,7 @@ class BookSide(ABC):
         """
         pass
 
-    def is_level_empty(self, price):
+    def is_level_empty(self, price: int):
         """
         Check if there exists an order queue at input price.
         """
