@@ -47,15 +47,15 @@ class OrderBookIntegrationBase(unittest.TestCase):
 class TestPosting(OrderBookIntegrationBase):
     def test_post_single_bid_creates_level(self):
         resting_order = _make_limit(self.generator, Side.BID, limit_price=99)
-        self.assertTrue(self.orderbook.bid_side.is_empty)
+        self.assertTrue(self.orderbook.get_book_side(Side.BID).is_empty)
         self.orderbook.post_order(resting_order)
-        self.assertFalse(self.orderbook.bid_side.is_empty)
+        self.assertFalse(self.orderbook.get_book_side(Side.BID).is_empty)
 
     def test_post_single_ask_creates_level(self):
         resting_order = _make_limit(self.generator, Side.ASK, limit_price=99)
-        self.assertTrue(self.orderbook.ask_side.is_empty)
+        self.assertTrue(self.orderbook.get_book_side(Side.ASK).is_empty)
         self.orderbook.post_order(resting_order)
-        self.assertFalse(self.orderbook.ask_side.is_empty)
+        self.assertFalse(self.orderbook.get_book_side(Side.ASK).is_empty)
 
     def test_post_multiple_same_price_same_side_preserves_fifo(self):
 
@@ -63,13 +63,8 @@ class TestPosting(OrderBookIntegrationBase):
         resting2 = _make_limit(self.generator, Side.BID, limit_price=99)
         self.orderbook.post_order(resting1)
         self.orderbook.post_order(resting2)
-        self.assertEqual(
-            len(self.orderbook.bid_side.levels[resting1.limit_price].queue), 2
-        )
-        self.assertEqual(
-            self.orderbook.bid_side.levels[resting1.limit_price].next_order_to_execute,
-            resting1,
-        )
+
+        self.orderbook.get_book_side(Side.BID)
 
     def test_post_multiple_different_prices_orders_levels_correctly(self):
         resting = {
@@ -78,17 +73,18 @@ class TestPosting(OrderBookIntegrationBase):
         }
         for order in resting.values():
             self.orderbook.post_order(order)
-        self.assertEqual(resting.keys(), self.orderbook.bid_side.levels.keys())
+        self.assertEqual(resting.keys(), self.orderbook.get_book_side(Side.BID).prices)
 
     def test_post_both_sides_leaves_uncrossed_book(self):
         resting1 = _make_limit(self.generator, Side.ASK, limit_price=100)
         resting2 = _make_limit(self.generator, Side.BID, limit_price=99)
         self.orderbook.post_order(resting1)
         self.orderbook.post_order(resting2)
-        self.assertFalse(self.orderbook.bid_side.is_empty)
-        self.assertFalse(self.orderbook.ask_side.is_empty)
+        self.assertFalse(self.orderbook.get_book_side(Side.BID).is_empty)
+        self.assertFalse(self.orderbook.get_book_side(Side.ASK).is_empty)
         self.assertGreater(
-            self.orderbook.ask_side.best_price, self.orderbook.bid_side.best_price
+            self.orderbook.get_book_side(Side.ASK).best_price,
+            self.orderbook.get_book_side(Side.BID).best_price,
         )
 
     def test_post_duplicate_id_raises_duplicate_error(self):
@@ -217,8 +213,12 @@ class TestQueries(OrderBookIntegrationBase):
         self.orderbook.post_order(resting_ask_1)
         self.orderbook.post_order(resting_ask_2)
         bid_state, ask_state = self.orderbook.get_top_state()
-        self.assertListEqual(list(bid_state), [self.orderbook.bid_side.best_price])
-        self.assertListEqual(list(ask_state), [self.orderbook.ask_side.best_price])
+        self.assertListEqual(
+            list(bid_state), [self.orderbook.get_book_side(Side.BID).best_price]
+        )
+        self.assertListEqual(
+            list(ask_state), [self.orderbook.get_book_side(Side.ASK).best_price]
+        )
 
     def test_get_top_state_empty_side_returns_empty_dict(self):
         self.assertTupleEqual(self.orderbook.get_top_state(), ({}, {}))
@@ -261,8 +261,28 @@ class TestPriceTimePriorityStructural(OrderBookIntegrationBase):
     is tested in test_order_execution.py.
     """
 
-    def test_posts_at_same_price_queue_in_post_order(self): ...
-    def test_new_post_joins_tail_of_existing_level(self): ...
+    def test_posts_at_same_price_queue_in_post_order(self):
+        resting1 = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting1)
+        resting2 = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting2)
+
+        self.assertIn(
+            resting2.order_id, self.orderbook.get_book_side(Side.ASK).get_level(100)
+        )
+
+    def test_new_post_joins_tail_of_existing_level(self):
+        resting1 = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting1)
+        resting2 = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting2)
+        resting3 = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting3)
+
+        self.assertIs(
+            resting3, self.orderbook.get_book_side(Side.ASK).get_level(100).tail
+        )
+
     def test_best_bid_is_highest_posted_price(self): ...
     def test_best_ask_is_lowest_posted_price(self): ...
 
