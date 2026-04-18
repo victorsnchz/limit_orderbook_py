@@ -152,5 +152,5 @@ class OrderBook:
 
         side, price = self._order_index[order_id]
         bookside = self.get_book_side(side)
-        order_queue = bookside.levels[price]
-        return order_queue.queue[order_id]
+        order_queue = bookside.get_level(price)
+        return order_queue.get_order(order_id)
