@@ -78,7 +78,7 @@ class BookSide(ABC):
         return states
 
     # TODO: untitest
-    def get_level(self, price: int):
+    def get_level(self, price: int) -> OrdersQueue:
         try:
             return self._levels[price]
         except KeyError:
