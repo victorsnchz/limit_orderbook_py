@@ -1,6 +1,10 @@
 import collections
 from src.orders.order import Order
-from src.bookkeeping.exceptions import EmptyQueueError, OrderNotFoundError
+from src.bookkeeping.exceptions import (
+    EmptyQueueError,
+    OrderNotFoundError,
+    DuplicateOrderError,
+)
 from src.bookkeeping.custom_types import LevelState
 
 
@@ -25,10 +29,10 @@ class OrdersQueue:
         Add order last in queue if not already in queue.
         """
 
-        if order.order_id not in self._queue:
+        if order.order_id not in self:
             self._queue[order.order_id] = order
         else:
-            raise RuntimeError(f"order id {order.order_id} already in queue")
+            raise DuplicateOrderError(f"order id {order.order_id} already in queue")
 
     def remove_order(self, order: Order) -> Order:
         """
