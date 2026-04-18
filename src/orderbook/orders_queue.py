@@ -24,6 +24,9 @@ class OrdersQueue:
     def __contains__(self, order_id: int) -> bool:
         return order_id in self._queue
 
+    def __len__(self) -> int:
+        return len(self._queue)
+
     def add_order(self, order: Order):
         """
         Add order last in queue if not already in queue.
