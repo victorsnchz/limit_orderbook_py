@@ -361,19 +361,15 @@ class TestGetOrder(unittest.TestCase):
         sentinel_order = object()
         self.orderbook._order_index[0] = (Side.BID, 99)
 
-        mock_queue = MagicMock()
-        mock_queue.queue = {0: sentinel_order}
-        self.orderbook.bid_side.levels = {99: mock_queue}
-        result = self.orderbook.get_order(0)
-        self.assertIs(result, sentinel_order)
+        self.orderbook.bid_side = MagicMock()
+        self.orderbook.bid_side.get_order.return_value = sentinel_order
+
+        self.assertIs(self.orderbook.get_order(0), sentinel_order)
+        self.orderbook.bid_side.get_order.assert_called_with(99, 0)
 
     def test_does_not_touch_opposite_side(self):
         self.orderbook._order_index[1] = (Side.ASK, 100)
-
-        mock_queue = MagicMock()
-        mock_queue.queue = {1: MagicMock()}
-        self.orderbook.ask_side.levels = {100: mock_queue}
-
+        self.orderbook.ask_side = MagicMock()
         self.orderbook.get_order(1)
         self.orderbook.bid_side.assert_not_called()
 
