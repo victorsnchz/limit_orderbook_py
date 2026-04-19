@@ -49,7 +49,7 @@ class BookSide(ABC):
 
         try:
             return self.get_level(price).get_order(order_id)
-        except:
+        except KeyError:
             raise OrderNotFoundError(
                 f"order {order_id} not found at {price} price level"
             )
@@ -74,13 +74,23 @@ class BookSide(ABC):
         """
         Check if there exists an order queue at input price.
         """
-        return self._levels[price].is_empty
+        try:
+            return self._levels[price].is_empty
+        except KeyError:
+            raise PriceLevelNotFoundError(
+                f"no level at price {price} on {type(self).__name__}"
+            )
 
     def delete_level(self, price: int):
         """
         Delete queue at given price.
         """
-        del self._levels[price]
+        try:
+            del self._levels[price]
+        except KeyError:
+            raise PriceLevelNotFoundError(
+                f"no level at price {price} on {type(self).__name__}"
+            )
 
     def get_states(self) -> dict[int, LevelState]:
         """
@@ -135,13 +145,17 @@ class BidSide(BookSide):
 
     @property
     def best_price(self) -> int:
-        if self.is_empty:
+        try:
+            return self._levels.keys()[-1]
+        except IndexError:
             raise EmptyBookSideError(f"{type(self).__name__} is empty")
-        return self._levels.keys()[-1]
 
     @property
     def top_level(self) -> OrdersQueue:
-        return self._levels.values()[-1]
+        try:
+            return self._levels.values()[-1]
+        except IndexError:
+            raise EmptyBookSideError("book side is empty cannot get top level")
 
     def get_volumes(self):
         volumes = super().get_volumes()
@@ -154,10 +168,14 @@ class AskSide(BookSide):
 
     @property
     def best_price(self) -> int:
-        if self.is_empty:
+        try:
+            return self._levels.keys()[0]
+        except IndexError:
             raise EmptyBookSideError(f"{type(self).__name__} is empty")
-        return self._levels.keys()[0]
 
     @property
     def top_level(self) -> OrdersQueue:
-        return self._levels.values()[0]
+        try:
+            return self._levels.values()[0]
+        except IndexError:
+            raise EmptyBookSideError("book side is empty cannot get top level")
