@@ -45,8 +45,7 @@ class FilledOrder:
     filled_qty: int
 
 
-class ExecutionStatus(enum.Enum):
+class FillStatus(enum.Enum):
     FILLED = enum.auto()
-    PARTIALLY_FILELD = enum.auto()
+    PARTIALLY_FILLED = enum.auto()
     UNFILLED = enum.auto()
-    RESTED = enum.auto()
