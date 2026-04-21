@@ -73,6 +73,17 @@ class Order:
     def user_id(self) -> int:
         return self._id.user_id
 
+    # --- other methods ---
+
+    def can_cross(self, opposite_best_price: int | None) -> bool:
+        if self.order_type == OrderType.MARKET:
+            return True
+        if self.side == Side.BID:
+            return self.limit_price >= opposite_best_price
+        if self.side == Side.ASK:
+            return self.limit_price <= opposite_best_price
+        raise ValueError("invalid side {self.side}")
+
     # --- mutable states ---
 
     def fill(self, quantity: int) -> int:
