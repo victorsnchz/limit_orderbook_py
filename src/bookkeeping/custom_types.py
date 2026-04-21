@@ -43,3 +43,10 @@ class FilledOrder:
     resting: OrderSnapshot
     aggressor: OrderSnapshot
     filled_qty: int
+
+
+class ExecutionStatus(enum.Enum):
+    FILLED = enum.auto()
+    PARTIALLY_FILELD = enum.auto()
+    UNFILLED = enum.auto()
+    RESTED = enum.auto()
