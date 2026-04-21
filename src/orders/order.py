@@ -76,6 +76,10 @@ class Order:
     # --- other methods ---
 
     def can_cross(self, opposite_best_price: int | None) -> bool:
+
+        if opposite_best_price is None:
+            return False
+
         if self.order_type == OrderType.MARKET:
             return True
         if self.side == Side.BID:
