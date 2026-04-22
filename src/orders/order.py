@@ -113,7 +113,7 @@ class Order:
 
     # --- order snapshot at given time ---
 
-    def snapshot(self):
+    def snapshot(self) -> OrderSnapshot:
 
         return OrderSnapshot(
             self.side,
