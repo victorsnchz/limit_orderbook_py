@@ -2,12 +2,8 @@ from src.orders.order import Order
 from src.orderbook.orderbook import OrderBook
 from src.orderbook.book_side import BookSide
 from src.bookkeeping.custom_types import Side, OrderType, FilledOrder
-from src.orderbook.orders_queue import OrdersQueue
 
 from abc import ABC, abstractmethod
-
-# TODO
-# factory to choose execution based on order type
 
 
 class OrderExecution(ABC):
@@ -55,7 +51,7 @@ class OrderExecution(ABC):
     """
 
     @abstractmethod
-    def _can_match_order(self):
+    def _can_match_order(self) -> bool:
         pass
 
     def _match(self) -> list[FilledOrder]:
@@ -64,9 +60,6 @@ class OrderExecution(ABC):
 
         while self._can_match_order(opposite_side):
             self.filled_orders += self.orderbook.fill_top(self.order)
-
-    def get_execution_report(self):
-        pass
 
 
 class LimitOrderExecution(OrderExecution):
@@ -84,7 +77,7 @@ class LimitOrderExecution(OrderExecution):
         if not self.order.is_filled:
             self.orderbook.post_order(self.order)
 
-    def _can_match_order(self, opposite_price_levels: BookSide):
+    def _can_match_order(self, opposite_price_levels: BookSide) -> bool:
 
         if self.order.is_filled:
             return False
@@ -110,7 +103,7 @@ class MarketOrderExecution(OrderExecution):
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
 
-    def _can_match_order(self, opposite_price_levels: BookSide):
+    def _can_match_order(self, opposite_price_levels: BookSide) -> bool:
 
         if self.order.is_filled:
             return False
