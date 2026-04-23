@@ -152,6 +152,7 @@ class OrderBook:
 
             if resting.is_filled:
                 queue.remove_order(resting)
+                del self._order_index[resting.order_id]
 
         if queue.is_empty:
             opposite_book_side.delete_level(opposite_book_side.best_price)
