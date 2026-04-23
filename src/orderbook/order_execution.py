@@ -2,7 +2,6 @@ from src.orders.order import Order
 from src.orderbook.orderbook import OrderBook
 from src.orderbook.book_side import BookSide
 from src.bookkeeping.custom_types import (
-    Side,
     OrderType,
     FilledPayload,
     Event,
@@ -39,9 +38,10 @@ class OrderExecution(ABC):
     def _get_opposite_side(self) -> BookSide:
         return self.orderbook.get_opposite_book_side(self.order.side)
 
-    @abstractmethod
-    def _can_match_order(self) -> None:
-        pass
+    def _can_match_order(self) -> bool:
+
+        opposite_side = self.orderbook.get_opposite_book_side(self.order.side)
+        return self.order.can_cross(opposite_side.best_price)
 
     def _match(self) -> list[Event]:
         filled_payloads = self.orderbook.fill_top(self.order)
@@ -91,22 +91,6 @@ class LimitOrderExecution(OrderExecution):
         if not self.order.is_filled:
             self.orderbook.post_order(self.order)
 
-    def _can_match_order(self, opposite_price_levels: BookSide) -> bool:
-
-        if self.order.is_filled:
-            return False
-
-        if opposite_price_levels.is_empty:
-            return False
-
-        if self.order.side == Side.ASK:
-            return self.order.limit_price <= opposite_price_levels.best_price
-
-        if self.order.side == Side.BID:
-            return self.order.limit_price >= opposite_price_levels.best_price
-
-        raise ValueError(f"order side {self.order.side.name} is not valid")
-
 
 class MarketOrderExecution(OrderExecution):
     """
@@ -116,16 +100,6 @@ class MarketOrderExecution(OrderExecution):
 
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
-
-    def _can_match_order(self, opposite_price_levels: BookSide) -> bool:
-
-        if self.order.is_filled:
-            return False
-
-        if opposite_price_levels.is_empty:
-            return False
-
-        return True
 
     def execute(self) -> ExecutionResult:
         self._match()
