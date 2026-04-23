@@ -1,6 +1,6 @@
 from src.bookkeeping.custom_types import Side
 from src.orderbook.book_side import BidSide, AskSide, BookSide
-from src.bookkeeping.custom_types import FilledOrder, Side, OrderType
+from src.bookkeeping.custom_types import FilledPayload, OrderType
 from src.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from src.orders.order import Order
 
@@ -129,7 +129,7 @@ class OrderBook:
 
     def cancel_order(self, order_id: int) -> None: ...
 
-    def fill_top(self, order: Order) -> list[FilledOrder]:
+    def fill_top(self, order: Order) -> list[FilledPayload]:
 
         filled_orders = []
         aggressor = order
@@ -145,7 +145,9 @@ class OrderBook:
             filled_qty = resting.fill(aggressor.remaining_quantity)
             aggressor.fill(filled_qty)
 
-            filled_order = FilledOrder(snapshot_resting, snapshot_aggressor, filled_qty)
+            filled_order = FilledPayload(
+                snapshot_resting, snapshot_aggressor, filled_qty
+            )
             filled_orders.append(filled_order)
 
             if resting.is_filled:

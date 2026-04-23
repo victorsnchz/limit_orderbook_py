@@ -1,7 +1,7 @@
 from src.orders.order import Order
 from src.orderbook.orderbook import OrderBook
 from src.orderbook.book_side import BookSide
-from src.bookkeeping.custom_types import Side, OrderType, FilledOrder
+from src.bookkeeping.custom_types import Side, OrderType, FilledPayload
 
 from abc import ABC, abstractmethod
 
@@ -26,40 +26,25 @@ class OrderExecution(ABC):
     def _get_opposite_side(self) -> BookSide:
         return self.orderbook.get_opposite_book_side(self.order.side)
 
-    """
-    def _fill_from_queue(self, queue: OrdersQueue) -> list[FilledOrder]:
-
-        filled_orders = []
-
-        incoming = self.order
-        while not incoming.is_filled and not queue.is_empty:
-            resting = queue.next_order_to_execute
-            snapshot_resting = resting.snapshot()
-            snapshot_incoming = incoming.snapshot()
-
-            filled = resting.fill(self.order.remaining_quantity)
-
-            incoming.fill(filled)
-
-            filled_order = FilledOrder(snapshot_resting, snapshot_incoming, filled)
-            filled_orders.append(filled_order)
-
-            if resting.is_filled:
-                filled_order = queue.remove_order(resting)
-
-        return filled_orders
-    """
-
     @abstractmethod
-    def _can_match_order(self) -> bool:
+    def _can_match_order(self) -> None:
         pass
 
-    def _match(self) -> list[FilledOrder]:
+    def _match(self) -> list[FilledPayload]:
 
         opposite_side: BookSide = self._get_opposite_side()
 
         while self._can_match_order(opposite_side):
             self.filled_orders += self.orderbook.fill_top(self.order)
+
+    def _build_execution_report(self):
+        aggressor = self.order.snapshot()
+        fills = self.filled_orders
+
+        posted = (
+            not (aggressor.order_type == OrderType.MARKET)
+            and aggressor.remaining_quantity > 0
+        )
 
 
 class LimitOrderExecution(OrderExecution):

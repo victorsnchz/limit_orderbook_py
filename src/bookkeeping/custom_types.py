@@ -38,14 +38,54 @@ class LevelState:
     participant_count: int
 
 
-@dataclass(frozen=True)
-class FilledOrder:
-    resting: OrderSnapshot
-    aggressor: OrderSnapshot
-    filled_qty: int
-
-
 class FillStatus(enum.Enum):
     FILLED = enum.auto()
     PARTIALLY_FILLED = enum.auto()
     UNFILLED = enum.auto()
+
+
+class EventKind(enum.Enum):
+    ACCEPTED = enum.auto()
+    FILLED = enum.auto()
+    POSTED = enum.auto()
+    # backlog: REJECTED, CANCELLED, MODIFIED
+
+
+@dataclass(frozen=True)
+class AcceptedPayload:
+    aggressor: OrderSnapshot
+
+
+@dataclass(frozen=True)
+class FilledPayload:
+    aggressor: OrderSnapshot
+    resting: OrderSnapshot
+    filled_qty: int
+
+
+@dataclass(frozen=True)
+class PostedPayload:
+    aggressor: OrderSnapshot
+
+
+Payload = AcceptedPayload | FilledPayload | PostedPayload
+
+
+@dataclass(frozen=True)
+class Event:
+    kind: EventKind
+    payload: Payload
+
+
+@dataclass(frozen=True)
+class ExecutionReport:
+    aggresssor: OrderSnapshot
+    fills: list[FilledPayload]
+    posted: bool
+    status: FillStatus
+
+
+@dataclass(frozen=True)
+class ExecutionResult:
+    report: ExecutionReport
+    events: list[Event]
