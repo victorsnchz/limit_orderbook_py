@@ -2,13 +2,10 @@ import unittest
 from unittest.mock import MagicMock, patch
 import sys
 
-# sys.path.append('../')
-sys.path.append("src")
-
 from src.orderbook.orderbook import OrderBook
 from src.orders.order_id_generator import OrderIdGenerator
 from src.orders.order import Order, OrderID, OrderSpec
-from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule, FilledOrder
+from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule
 from src.orderbook.orders_queue import OrdersQueue
 from src.orderbook.order_execution import (
     LimitOrderExecution,
@@ -36,7 +33,7 @@ class TestLimitOrderExecutionPost(unittest.TestCase):
     def test_post_filled_order_not_rested(self):
         order = _make_limit_order(self.generator, Side.BID, price=99, quantity=100)
         order.fill(100)
-        LimitOrderExecution(order, self.orderbook)._post_order()
+        LimitOrderExecution(order, self.orderbook).post_order()
         self.assertTrue(self.orderbook.bid_side.is_empty)
 
 
@@ -187,7 +184,7 @@ def _post_order(
     quantity: int,
 ) -> Order:
     order = _make_limit_order(generator, side, price, quantity)
-    LimitOrderExecution(order, orderbook)._post_order()
+    LimitOrderExecution(order, orderbook).post_order()
     return order
 
 
