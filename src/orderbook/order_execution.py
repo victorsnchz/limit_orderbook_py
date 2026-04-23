@@ -85,7 +85,7 @@ class LimitOrderExecution(OrderExecution):
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
 
-    def execute(self) -> None:
+    def execute(self) -> ExecutionResult:
 
         self._match()
         if not self.order.is_filled:
@@ -127,7 +127,7 @@ class MarketOrderExecution(OrderExecution):
 
         return True
 
-    def execute(self):
+    def execute(self) -> ExecutionResult:
         self._match()
 
 
