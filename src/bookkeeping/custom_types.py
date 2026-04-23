@@ -75,6 +75,9 @@ Payload = AcceptedPayload | FilledPayload | PostedPayload
 class Event:
     kind: EventKind
     payload: Payload
+    # TODO: for logging
+    # timestamp: str
+    # sequence: int
 
 
 @dataclass(frozen=True)
