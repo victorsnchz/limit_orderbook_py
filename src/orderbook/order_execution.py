@@ -1,7 +1,18 @@
 from src.orders.order import Order
 from src.orderbook.orderbook import OrderBook
 from src.orderbook.book_side import BookSide
-from src.bookkeeping.custom_types import Side, OrderType, FilledPayload
+from src.bookkeeping.custom_types import (
+    Side,
+    OrderType,
+    FilledPayload,
+    Event,
+    ExecutionResult,
+    FillStatus,
+    PostedPayload,
+    AcceptedPayload,
+    EventKind,
+    ExecutionReport,
+)
 
 from abc import ABC, abstractmethod
 
@@ -14,10 +25,12 @@ class OrderExecution(ABC):
     def __init__(self, order: Order, orderbook: OrderBook):
         self.order: Order = order
         self.orderbook: OrderBook = orderbook
-        self.filled_orders = []
+        self._filled_payloads = [FilledPayload]
+        self._events: list[Event]
+        self._posted: bool = False
 
     @abstractmethod
-    def execute(self):
+    def execute(self) -> ExecutionResult:
         pass
 
     def _get_side(self) -> BookSide:
@@ -31,20 +44,35 @@ class OrderExecution(ABC):
         pass
 
     def _match(self) -> list[FilledPayload]:
+        return self.orderbook.fill_top(self.order)
 
-        opposite_side: BookSide = self._get_opposite_side()
+    def _record_accepted(self) -> None:
+        payload = AcceptedPayload(self.order.snapshot())
+        kind = EventKind.ACCEPTED
+        self._events.append(Event(kind=kind, payload=payload))
 
-        while self._can_match_order(opposite_side):
-            self.filled_orders += self.orderbook.fill_top(self.order)
+    def _record_posted(self) -> None:
+        payload = PostedPayload(self.order.snapshot())
+        kind = EventKind.POSTED
+        self._events.append(Event(kind=kind, payload=payload))
+        self._posted = True
 
-    def _build_execution_report(self):
-        aggressor = self.order.snapshot()
-        fills = self.filled_orders
+    def _compute_status(self) -> FillStatus:
+        if self.order.is_filled:
+            return FillStatus.FILLED
+        if self.order.initial_quantity == self.order.remaining_quantity:
+            return FillStatus.UNFILLED
+        return FillStatus.PARTIALLY_FILLED
 
-        posted = (
-            not (aggressor.order_type == OrderType.MARKET)
-            and aggressor.remaining_quantity > 0
+    def _build_result(self) -> None:
+        report = ExecutionReport(
+            aggresssor=self.order.snapshot(),
+            fills=self._filled_payloads,
+            posted=self._posted,
+            status=self._compute_status(),
         )
+
+        return ExecutionResult(report=report, events=self._events)
 
 
 class LimitOrderExecution(OrderExecution):
