@@ -131,7 +131,7 @@ class OrderBook:
 
     def fill_top(self, order: Order) -> list[FilledPayload]:
 
-        filled_orders = []
+        filled_payloads = []
         aggressor = order
 
         opposite_book_side = self.get_opposite_book_side(aggressor.side)
@@ -145,10 +145,10 @@ class OrderBook:
             filled_qty = resting.fill(aggressor.remaining_quantity)
             aggressor.fill(filled_qty)
 
-            filled_order = FilledPayload(
+            filled_payload = FilledPayload(
                 snapshot_resting, snapshot_aggressor, filled_qty
             )
-            filled_orders.append(filled_order)
+            filled_payloads.append(filled_payload)
 
             if resting.is_filled:
                 queue.remove_order(resting)
@@ -157,4 +157,4 @@ class OrderBook:
         if queue.is_empty:
             opposite_book_side.delete_level(opposite_book_side.best_price)
 
-        return filled_orders
+        return filled_payloads
