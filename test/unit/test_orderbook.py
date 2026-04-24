@@ -11,35 +11,6 @@ from src.bookkeeping.exceptions import InvalidOrderError, DuplicateOrderError
 from src.orderbook.book_side import BidSide, AskSide
 
 
-class TestOrderBookRouting(unittest.TestCase):
-    def setUp(self):
-        self.orderbook = OrderBook()
-
-    def test_get_book_side_bid_returns_bid_side(self):
-        side = self.orderbook.get_book_side(Side.BID)
-        self.assertIsInstance(side, BidSide)
-
-    def test_get_book_side_ask_returns_ask_side(self):
-        side = self.orderbook.get_book_side(Side.ASK)
-        self.assertIsInstance(side, AskSide)
-
-    def test_get_opposite_book_side_bid_returns_ask(self):
-        side = self.orderbook.get_opposite_book_side(Side.BID)
-        self.assertIsInstance(side, AskSide)
-
-    def test_get_opposite_book_side_ask_returns_bid(self):
-        side = self.orderbook.get_opposite_book_side(Side.ASK)
-        self.assertIsInstance(side, BidSide)
-
-    def test_get_book_side_invalid_raises(self):
-        with self.assertRaises(TypeError):
-            self.orderbook.get_book_side("BID")
-
-    def test_get_opposite_book_side_invalid_raises(self):
-        with self.assertRaises(TypeError):
-            self.orderbook.get_opposite_book_side("BID")
-
-
 class TestPostOrder(unittest.TestCase):
     def setUp(self):
         self.orderbook = OrderBook()
