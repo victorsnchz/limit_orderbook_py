@@ -39,9 +39,11 @@ class OrderExecution(ABC):
         return self.orderbook.get_opposite_book_side(self.order.side)
 
     def _can_match_order(self) -> bool:
-
+        # if opposite side empty will pass a None price to order.can_cross()
+        # may have to review this logic, not obvious at first read
         opposite_side = self.orderbook.get_opposite_book_side(self.order.side)
-        return self.order.can_cross(opposite_side.best_price)
+        best_price = None if opposite_side.is_empty else opposite_side.best_price
+        return self.order.can_cross(best_price)
 
     def _match(self) -> list[Event]:
         filled_payloads = self.orderbook.fill_top(self.order)
