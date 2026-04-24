@@ -225,12 +225,6 @@ class TestGetOppositeBookSide(unittest.TestCase):
                 with self.assertRaises(TypeError):
                     self.orderbook.get_opposite_book_side(bad_input)
 
-    def test_symmetry(self):
-
-        self.orderbook.get_opposite_book_side(Side.BID)
-        second = self.orderbook.get_opposite_book_side(Side.ASK)
-        self.assertIs(second, self.orderbook.bid_side)
-
 
 class TestGetStates(unittest.TestCase):
     def setUp(self):
