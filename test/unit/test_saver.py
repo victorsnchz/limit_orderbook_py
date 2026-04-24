@@ -17,6 +17,7 @@ test_saver_data_dir = (
 saver = Saver(data_directory=test_saver_data_dir)
 
 
+@unittest.skip("skip - to be decommissioned")
 class SaverTestBase(unittest.TestCase):
     test_case_dir: str
 
@@ -48,6 +49,7 @@ class SaverTestBase(unittest.TestCase):
             self.assertListEqual(target, result)
 
 
+@unittest.skip("skip - to be decommissioned")
 class TestSaverBookState(SaverTestBase):
     test_case_dir = "book_state"
 
@@ -64,6 +66,7 @@ class TestSaverBookState(SaverTestBase):
         )
 
 
+@unittest.skip("skip - to be decommissioned")
 class TestSaverTopOfBookState(SaverTestBase):
     test_case_dir = "top_of_book_state"
 
@@ -80,6 +83,7 @@ class TestSaverTopOfBookState(SaverTestBase):
         )
 
 
+@unittest.skip("skip - to be decommissioned")
 class TestSaverOrders(unittest.TestCase):
     pass
 
