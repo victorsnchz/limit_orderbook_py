@@ -135,6 +135,12 @@ class OrderBook:
         aggressor = order
 
         opposite_book_side = self.get_opposite_book_side(aggressor.side)
+        if opposite_book_side.is_empty:
+            return []
+        # TODO
+        # give more consideration to trading against empty book case
+        # clarify responsibilities
+        # more unit and integration testing
         queue = opposite_book_side.top_level
 
         while not (aggressor.is_filled or queue.is_empty):
