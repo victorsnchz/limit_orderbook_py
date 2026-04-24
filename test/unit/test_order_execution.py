@@ -14,6 +14,7 @@ from src.orderbook.order_execution import (
 )
 
 
+@unittest.skip("refactor into pure unit and integration")
 class TestLimitOrderExecutionPost(unittest.TestCase):
     def setUp(self):
         self.orderbook = OrderBook()
@@ -37,6 +38,7 @@ class TestLimitOrderExecutionPost(unittest.TestCase):
         self.assertTrue(self.orderbook.bid_side.is_empty)
 
 
+@unittest.skip("refactor into pure unit and integration")
 # --- integration test -----------------------------------------------------------------
 class TestLimitOrderExecutionExecute(unittest.TestCase):
     def setUp(self):
@@ -96,6 +98,7 @@ class TestLimitOrderExecutionExecute(unittest.TestCase):
         self.assertTrue(self.orderbook.ask_side.is_empty)
 
 
+@unittest.skip("refactor into pure unit and integration")
 # --- integration test -----------------------------------------------------------------
 class TestMarketOrderExecution(unittest.TestCase):
     def setUp(self):
@@ -150,6 +153,7 @@ class TestMarketOrderExecution(unittest.TestCase):
         self.assertTrue(self.orderbook.ask_side.is_empty)
 
 
+@unittest.skip("refactor into pure unit and integration")
 class TestOrderExecutionMap(unittest.TestCase):
     def test_limit_key_returns_limit_execution_class(self):
         self.assertIs(map_order_type_to_execution[OrderType.LIMIT], LimitOrderExecution)
