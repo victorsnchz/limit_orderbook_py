@@ -157,7 +157,7 @@ class OrderBook:
             filled_payloads.append(filled_payload)
 
             if resting.is_filled:
-                queue.remove_order(resting)
+                queue.remove_order(resting.order_id)
                 del self._order_index[resting.order_id]
 
         if queue.is_empty:
