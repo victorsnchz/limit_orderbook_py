@@ -239,11 +239,11 @@ encapsulation honest and invariant changes localised.
 
 ## D9 — `OrderBook` maintains an order index
 
-**Status:** current (partial — cleanup on fill pending, see roadmap).
+**Status:** current.
 
 **Decision:** `OrderBook` owns a `dict[int, tuple[Side, int]]` mapping
 `order_id` to `(side, price)`. Populated on `post_order`, consulted on
-`get_order` / `cancel_order` / `modify_order`.
+`get_order` / `cancel_order` / `modify_order` / `fill_top`.
 
 **Rationale:** without it, cancel and modify are O(levels) — the book would
 have to scan every price level on every side to find the order. With it,
@@ -255,6 +255,13 @@ must move together:
 - `cancel_order` → remove from both.
 - `fill_top` → when a resting order clears, remove from both. *(Pending —
   currently only removed from the queue, leaving the index to drift.)*
+
+**Public memberhsip API** Orderbook.__contains__(order_id: int). Index is consulted
+often enough (in-book internal logic and in-tests) that exposing membership through
+dunder justified. Mirrors OrdersQueue.__contains__ shape from D8,
+Encapsulated index lookup so internal mapping changes don't ripple through caller.
+Future setter for index entries __setitem__ could be considered for similar reasons if
+surface grows.
 
 **Distinction worth naming:**
 - `OrderNotFoundError` (id absent from index) — expected, user-facing.
