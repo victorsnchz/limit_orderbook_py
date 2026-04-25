@@ -1,7 +1,7 @@
 import unittest
 from src.orderbook.orderbook import OrderBook
 from src.orders.order import Order, OrderID, OrderSpec
-from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule
+from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule, LevelState
 from src.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from src.orders.order_id_generator import OrderIdGenerator
 from src.orderbook.book_side import BidSide, AskSide, BookSide
@@ -533,6 +533,80 @@ class TestFillTop(OrderBookIntegrationBase):
         for order in resting_orders[2]:
             self.assertFalse(order.is_filled)
             self.assertIn(order.order_id, self.orderbook)
+
+    # ----------------------------------------------------------------------------------
+    # degenerate inputs
+    # ----------------------------------------------------------------------------------
+
+    def test_fill_top_against_empty_opposite_side_returns_empty(self):
+        aggressor = _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
+
+        payloads = self.orderbook.fill_top(aggressor)
+
+        self.assertListEqual(payloads, [])
+        self.assertEqual(aggressor.initial_quantity, aggressor.remaining_quantity)
+        self.assertTrue(self.orderbook.bid_side.is_empty)
+        self.assertNotIn(aggressor.order_id, self.orderbook)
+
+    def test_fill_top_will_filled_aggressor_is_no_op(self):
+        aggressor = _make_limit(self.generator, Side.ASK, limit_price=0, quantity=0)
+        aggressor.fill(100)
+
+        resting = _make_limit(self.generator, Side.BID, limit_price=100)
+        self.orderbook.post_order(resting)
+
+        payloads = self.orderbook.fill_top(aggressor)
+        self.assertListEqual(payloads, [])
+        self.assertIn(resting.order_id, self.orderbook)
+        self.assertEqual(resting.initial_quantity, resting.remaining_quantity)
+        self.assertFalse(self.orderbook.bid_side.is_empty)
+        self.assertTrue(self.orderbook.ask_side.is_empty)
+        self.assertNotIn(aggressor.order_id, self.orderbook)
+
+    # ----------------------------------------------------------------------------------
+    # state post fill top
+    # ----------------------------------------------------------------------------------
+
+    def test_get_states_reflects_post_match_book(self):
+
+        resting1 = _make_limit(self.generator, Side.BID, limit_price=99, quantity=50)
+        resting2 = _make_limit(self.generator, Side.ASK, limit_price=100, quantity=10)
+        resting3 = _make_limit(self.generator, Side.ASK, limit_price=101, quantity=25)
+        resting4 = _make_limit(self.generator, Side.ASK, limit_price=101, quantity=75)
+        resting5 = _make_limit(self.generator, Side.ASK, limit_price=103, quantity=150)
+
+        resting_orders = [resting1, resting2, resting3, resting4, resting5]
+        for resting_order in resting_orders:
+            self.orderbook.post_order(resting_order)
+
+        aggressor = _make_market(self.generator, Side.BID, quantity=10)
+
+        self.orderbook.fill_top(aggressor)
+
+        bid_states, ask_states = self.orderbook.get_states()
+
+        self.assertDictEqual(bid_states, {99: LevelState(50, 1, 1)})
+        self.assertDictEqual(
+            ask_states, {101: LevelState(100, 2, 1), 103: LevelState(150, 1, 1)}
+        )
+
+    def test_get_top_state_reflects_post_match_book(self):
+
+        resting1 = _make_limit(self.generator, Side.ASK, limit_price=100, quantity=20)
+        resting2 = _make_limit(self.generator, Side.ASK, limit_price=101, quantity=25)
+
+        resting_orders = [resting1, resting2]
+        for resting_order in resting_orders:
+            self.orderbook.post_order(resting_order)
+
+        aggressor = _make_market(self.generator, Side.BID, quantity=30)
+
+        self.orderbook.fill_top(aggressor)
+
+        bid_top_state, ask_top_state = self.orderbook.get_top_state()
+
+        self.assertDictEqual(bid_top_state, {})
+        self.assertDictEqual(ask_top_state, {101: LevelState(25, 1, 1)})
 
 
 def _make_limit(
