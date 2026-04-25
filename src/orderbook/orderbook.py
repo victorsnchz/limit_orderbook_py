@@ -15,6 +15,10 @@ class OrderBook:
 
         self.bid_side = BidSide()
         self.ask_side = AskSide()
+
+        # to consider:
+        #   - dedicatd method to add to order_index
+        #   - dedicatd order_index class if complexity grows (unlikely)
         self._order_index: dict[int, tuple[Side, int]] = {}
 
     # --- getters ----------------------------------------------------------------------
@@ -99,6 +103,9 @@ class OrderBook:
 
         return self.get_book_side(side).get_order(price, order_id)
 
+    def __contains__(self, order_id: int) -> bool:
+        return order_id in self._order_index
+
     def post_order(self, order: Order) -> None:
 
         if order.order_type is not OrderType.LIMIT:
@@ -106,7 +113,7 @@ class OrderBook:
                 f"cannot post to book an order of type {order.order_type}"
             )
 
-        if order.order_id in self._order_index:
+        if order.order_id in self:
             raise DuplicateOrderError(f"order {order.order_id} already exists in book")
 
         if order.is_filled:
