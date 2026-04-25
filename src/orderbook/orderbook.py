@@ -159,7 +159,9 @@ class OrderBook:
             aggressor.fill(filled_qty)
 
             filled_payload = FilledPayload(
-                snapshot_resting, snapshot_aggressor, filled_qty
+                aggressor=snapshot_aggressor,
+                resting=snapshot_resting,
+                filled_qty=filled_qty,
             )
             filled_payloads.append(filled_payload)
 
