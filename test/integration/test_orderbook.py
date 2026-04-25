@@ -79,7 +79,7 @@ class TestPosting(OrderBookIntegrationBase):
     def test_post_registers_in_order_index(self):
         resting = _make_limit(self.generator, Side.BID, limit_price=100)
         self.orderbook.post_order(resting)
-        self.assertIn(resting.order_id, self.orderbook._order_index)
+        self.assertIn(resting.order_id, self.orderbook)
         self.assertEqual(
             (resting.side, resting.limit_price),
             self.orderbook._order_index[resting.order_id],
@@ -291,7 +291,248 @@ class TestCancel(OrderBookIntegrationBase):
     def test_cancel_removes_from_book_and_index(self): ...
 
 
-class TestMatching(OrderBookIntegrationBase): ...
+class TestFillTop(OrderBookIntegrationBase):
+    # ----------------------------------------------------------------------------------
+    # single-level
+    # ----------------------------------------------------------------------------------
+
+    def test_aggressor_fully_consumes_single_resting_at_one_level(self):
+
+        resting = _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
+        self.orderbook.post_order(resting)
+
+        aggressor = _make_market(self.generator, Side.ASK, quantity=200)
+
+        payloads = self.orderbook.fill_top(aggressor)
+
+        self.assertTrue(resting.is_filled)
+        self.assertTrue(self.orderbook.bid_side.is_empty)
+        self.assertNotIn(resting.order_id, self.orderbook)
+
+        self.assertFalse(aggressor.is_filled)
+
+        self.assertEqual(len(payloads), 1)
+        self.assertEqual(aggressor.remaining_quantity, 100)
+
+    def test_aggressor_partially_consumes_single_resting(self):
+
+        resting = _make_limit(self.generator, Side.BID, limit_price=100, quantity=1000)
+        self.orderbook.post_order(resting)
+
+        aggressor = _make_market(self.generator, Side.ASK, quantity=100)
+
+        payloads = self.orderbook.fill_top(aggressor)
+
+        self.assertTrue(aggressor.is_filled)
+        self.assertFalse(resting.is_filled)
+        self.assertFalse(self.orderbook.bid_side.is_empty)
+        self.assertFalse(self.orderbook.bid_side.top_level.is_empty)
+        self.assertIn(resting.order_id, self.orderbook)
+        self.assertIn(resting.order_id, self.orderbook.bid_side.top_level)
+        self.assertEqual(len(payloads), 1)
+
+    def test_aggressor_consumes_multiple_resting_at_same_level_fifo(self):
+
+        resting1 = _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
+        resting2 = _make_limit(self.generator, Side.BID, limit_price=100, quantity=200)
+        resting3 = _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
+
+        aggressor = _make_market(self.generator, Side.ASK, quantity=200)
+
+        self.orderbook.post_order(resting1)
+        self.orderbook.post_order(resting2)
+        payloads = self.orderbook.fill_top(aggressor)
+
+        self.assertTrue(aggressor.is_filled)
+
+        self.assertTrue(resting1.is_filled)
+        self.assertNotIn(resting1.order_id, self.orderbook)
+
+        self.assertFalse(resting2.is_filled)
+        self.assertIn(resting2.order_id, self.orderbook)
+        self.assertEqual(resting2.remaining_quantity, 100)
+        self.assertIs(self.orderbook.bid_side.top_level.next_order_to_execute, resting2)
+
+        self.assertEqual(resting3.initial_quantity, resting3.remaining_quantity)
+
+        self.assertEqual(len(payloads), 2)
+
+    def test_aggressor_larger_than_level_stops_at_exhaustion(self):
+        resting_orders = [
+            _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
+            for _ in range(5)
+        ]
+
+        aggressor = _make_limit(self.generator, Side.ASK, limit_price=99, quantity=1000)
+
+        for order in resting_orders:
+            self.orderbook.post_order(order)
+
+        top_level = self.orderbook.bid_side.top_level
+
+        payloads = self.orderbook.fill_top(aggressor)
+
+        self.assertFalse(aggressor.is_filled)
+
+        for order in resting_orders:
+            self.assertTrue(order.is_filled)
+            self.assertNotIn(order.order_id, self.orderbook)
+
+        self.assertEqual(len(payloads), len(resting_orders))
+        self.assertTrue(top_level.is_empty)
+
+        self.assertEqual(aggressor.remaining_quantity, 500)
+        self.assertNotIn(aggressor.order_id, self.orderbook)
+        self.assertEqual(len(payloads), 5)
+
+    # ----------------------------------------------------------------------------------
+    # multiple-levels
+    # ----------------------------------------------------------------------------------
+    def test_fill_top_only_consumes_top_level_not_lower(self):
+        resting_orders_top_level = [
+            _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
+            for _ in range(5)
+        ]
+
+        resting_sublevel = _make_limit(
+            self.generator, Side.BID, limit_price=99, quantity=100
+        )
+
+        aggressor = _make_limit(self.generator, Side.ASK, limit_price=99, quantity=1000)
+
+        for order in resting_orders_top_level:
+            self.orderbook.post_order(order)
+        self.orderbook.post_order(resting_sublevel)
+
+        initial_top_level = self.orderbook.bid_side.top_level
+
+        payloads = self.orderbook.fill_top(aggressor)
+
+        self.assertFalse(aggressor.is_filled)
+
+        for order in resting_orders_top_level:
+            self.assertTrue(order.is_filled)
+            self.assertNotIn(order.order_id, self.orderbook)
+
+        self.assertEqual(len(payloads), len(resting_orders_top_level))
+        self.assertTrue(initial_top_level.is_empty)
+        self.assertIsNot(self.orderbook.bid_side.top_level, initial_top_level)
+
+        self.assertEqual(aggressor.remaining_quantity, 500)
+        self.assertNotIn(aggressor.order_id, self.orderbook)
+
+        self.assertEqual(
+            resting_sublevel.initial_quantity, resting_sublevel.remaining_quantity
+        )
+        self.assertEqual(len(payloads), 5)
+
+    def test_consecutive_fill_top_calls_walk_down_bids(self):
+
+        aggressor = _make_limit(self.generator, Side.ASK, limit_price=0, quantity=1000)
+        # build 3 layers of 5 orders
+
+        resting_orders = [
+            [
+                _make_limit(self.generator, Side.BID, limit_price=100 - i, quantity=100)
+                for _ in range(5)
+            ]
+            for i in range(3)
+        ]
+
+        levels = []
+
+        # post orders and get the three levels in order
+        for same_price_orders in resting_orders:
+            for order in same_price_orders:
+                self.orderbook.post_order(order)
+
+            levels.append(self.orderbook.bid_side.get_level(order.limit_price))
+
+        # fill top layer
+        payloads_top = self.orderbook.fill_top(aggressor)
+
+        self.assertFalse(aggressor.is_filled)
+        self.assertIsNot(levels[0], self.orderbook.bid_side.top_level)
+
+        for order in resting_orders[0]:
+            self.assertTrue(order.is_filled)
+            self.assertNotIn(order.order_id, self.orderbook)
+
+        self.assertEqual(len(payloads_top), 5)
+
+        payloads_second = self.orderbook.fill_top(aggressor)
+
+        self.assertTrue(aggressor.is_filled)
+        self.assertIsNot(levels[1], self.orderbook.bid_side.top_level)
+
+        for order in resting_orders[1]:
+            self.assertTrue(order.is_filled)
+            self.assertNotIn(order.order_id, self.orderbook)
+
+        self.assertEqual(len(payloads_second), 5)
+
+        payloads_third = self.orderbook.fill_top(aggressor)
+        self.assertListEqual(payloads_third, [])
+        self.assertIs(levels[2], self.orderbook.bid_side.top_level)
+
+        for order in resting_orders[2]:
+            self.assertFalse(order.is_filled)
+            self.assertIn(order.order_id, self.orderbook)
+
+    def test_consecutive_fill_top_calls_walks_up_asks(self):
+
+        aggressor = _make_limit(
+            self.generator, Side.BID, limit_price=200, quantity=1000
+        )
+        # build 3 layers of 5 orders
+
+        resting_orders = [
+            [
+                _make_limit(self.generator, Side.ASK, limit_price=100 + i, quantity=100)
+                for _ in range(5)
+            ]
+            for i in range(3)
+        ]
+
+        levels = []
+
+        # post orders and get the three levels in order
+        for same_price_orders in resting_orders:
+            for order in same_price_orders:
+                self.orderbook.post_order(order)
+
+            levels.append(self.orderbook.ask_side.get_level(order.limit_price))
+
+        # fill top layer
+        payloads_top = self.orderbook.fill_top(aggressor)
+
+        self.assertFalse(aggressor.is_filled)
+        self.assertIsNot(levels[0], self.orderbook.ask_side.top_level)
+
+        for order in resting_orders[0]:
+            self.assertTrue(order.is_filled)
+            self.assertNotIn(order.order_id, self.orderbook)
+
+        self.assertEqual(len(payloads_top), 5)
+
+        payloads_second = self.orderbook.fill_top(aggressor)
+
+        self.assertTrue(aggressor.is_filled)
+        self.assertIsNot(levels[1], self.orderbook.ask_side.top_level)
+
+        for order in resting_orders[1]:
+            self.assertTrue(order.is_filled)
+            self.assertNotIn(order.order_id, self.orderbook)
+
+        self.assertEqual(len(payloads_second), 5)
+
+        payloads_third = self.orderbook.fill_top(aggressor)
+        self.assertListEqual(payloads_third, [])
+        self.assertIs(levels[2], self.orderbook.ask_side.top_level)
+
+        for order in resting_orders[2]:
+            self.assertFalse(order.is_filled)
+            self.assertIn(order.order_id, self.orderbook)
 
 
 def _make_limit(
