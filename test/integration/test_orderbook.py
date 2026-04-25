@@ -85,9 +85,6 @@ class TestPosting(OrderBookIntegrationBase):
             self.orderbook._order_index[resting.order_id],
         )
 
-    @unittest.skip("are invariants checks necessary, what to test")
-    def test_post_many_orders_preserves_all_invariants(self): ...
-
 
 class TestGetOrder(OrderBookIntegrationBase):
     def test_get_order_returns_same_instance_posted(self):
