@@ -5,38 +5,6 @@ from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule
 from src.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from src.orders.order_id_generator import OrderIdGenerator
 from src.orderbook.book_side import BidSide, AskSide, BookSide
-from src.orderbook.orders_queue import OrdersQueue
-from collections import defaultdict
-
-
-def _make_limit(
-    generator: OrderIdGenerator,
-    side: Side,
-    limit_price: int,
-    quantity: int = 100,
-    execution_rule: ExecutionRule = ExecutionRule.GTC,
-) -> Order:
-    spec = OrderSpec(
-        side=side,
-        order_type=OrderType.LIMIT,
-        quantity=quantity,
-        limit_price=limit_price,
-        execution_rule=execution_rule,
-    )
-    id_ = OrderID(generator.next_id(), 0)
-
-    return Order(spec, id_)
-
-
-def _make_market(
-    generator: OrderIdGenerator,
-    side: Side,
-    quantity: int = 100,
-) -> Order:
-    spec = OrderSpec(side=side, order_type=OrderType.MARKET, quantity=quantity)
-    id_ = OrderID(generator.next_id(), 0)
-
-    return Order(spec, id_)
 
 
 class OrderBookIntegrationBase(unittest.TestCase):
@@ -323,9 +291,37 @@ class TestCancel(OrderBookIntegrationBase):
     def test_cancel_removes_from_book_and_index(self): ...
 
 
-@unittest.skip("wait until implementation")
-class TestMatching(OrderBookIntegrationBase):
-    def test_fill_top_single_level_contract(self): ...
+class TestMatching(OrderBookIntegrationBase): ...
+
+
+def _make_limit(
+    generator: OrderIdGenerator,
+    side: Side,
+    limit_price: int,
+    quantity: int = 100,
+    execution_rule: ExecutionRule = ExecutionRule.GTC,
+) -> Order:
+    spec = OrderSpec(
+        side=side,
+        order_type=OrderType.LIMIT,
+        quantity=quantity,
+        limit_price=limit_price,
+        execution_rule=execution_rule,
+    )
+    id_ = OrderID(generator.next_id(), 0)
+
+    return Order(spec, id_)
+
+
+def _make_market(
+    generator: OrderIdGenerator,
+    side: Side,
+    quantity: int = 100,
+) -> Order:
+    spec = OrderSpec(side=side, order_type=OrderType.MARKET, quantity=quantity)
+    id_ = OrderID(generator.next_id(), 0)
+
+    return Order(spec, id_)
 
 
 if __name__ == "__main__":
