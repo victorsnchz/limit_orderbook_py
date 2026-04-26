@@ -46,7 +46,10 @@ class OrderExecution(ABC):
         return self.order.can_cross(best_price)
 
     def _match(self) -> list[Event]:
-        filled_payloads = self.orderbook.fill_top(self.order)
+        filled_payloads = []
+        while not self.order.is_filled and self._can_match_order():
+            filled_payloads += self.orderbook.fill_top(self.order)
+
         return [Event(EventKind.FILLED, payload) for payload in filled_payloads]
 
     def _record_accepted(self) -> None:
