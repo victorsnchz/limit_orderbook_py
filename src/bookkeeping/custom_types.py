@@ -58,7 +58,6 @@ class AcceptedPayload:
 
 @dataclass(frozen=True)
 class FilledPayload:
-    aggressor: OrderSnapshot
     resting: OrderSnapshot
     filled_qty: int
 
