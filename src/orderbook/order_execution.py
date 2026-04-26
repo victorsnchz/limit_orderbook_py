@@ -24,6 +24,7 @@ class OrderExecution(ABC):
     def __init__(self, order: Order, orderbook: OrderBook):
         self.order: Order = order
         self.orderbook: OrderBook = orderbook
+        self._opposite_book_side: BookSide = self.orderbook.get_opposite_book_side()
         self._filled_payloads = [FilledPayload]
         self._events: list[Event]
         self._posted: bool = False
@@ -32,17 +33,14 @@ class OrderExecution(ABC):
     def execute(self) -> ExecutionResult:
         pass
 
-    def _get_side(self) -> BookSide:
-        return self.orderbook.get_book_side(self.order.side)
-
-    def _get_opposite_side(self) -> BookSide:
-        return self.orderbook.get_opposite_book_side(self.order.side)
-
     def _can_match_order(self) -> bool:
         # if opposite side empty will pass a None price to order.can_cross()
         # may have to review this logic, not obvious at first read
-        opposite_side = self.orderbook.get_opposite_book_side(self.order.side)
-        best_price = None if opposite_side.is_empty else opposite_side.best_price
+        best_price = (
+            None
+            if self._opposite_book_side.is_empty
+            else self._opposite_book_side.best_price
+        )
         return self.order.can_cross(best_price)
 
     def _match(self) -> list[Event]:
