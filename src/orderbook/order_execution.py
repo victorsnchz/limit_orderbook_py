@@ -98,8 +98,6 @@ class LimitOrderExecution(OrderExecution):
         if not self.order.is_filled:
             self.orderbook.post_order(self.order)
 
-        return self._build_result()
-
 
 class MarketOrderExecution(OrderExecution):
     """
@@ -112,8 +110,6 @@ class MarketOrderExecution(OrderExecution):
 
     def _do_execute(self) -> ExecutionResult:
         self._match()
-
-        return self._build_result()
 
 
 map_order_type_to_execution = {
