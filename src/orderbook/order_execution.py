@@ -29,9 +29,13 @@ class OrderExecution(ABC):
         self._events: list[Event]
         self._posted: bool = False
 
-    @abstractmethod
     def execute(self) -> ExecutionResult:
-        pass
+        self._do_execute()
+        self._build_result()
+        return self._execution_result
+
+    @abstractmethod
+    def _do_execute(self): ...
 
     def _can_match_order(self) -> bool:
         # if opposite side empty will pass a None price to order.can_cross()
@@ -76,7 +80,7 @@ class OrderExecution(ABC):
             status=self._compute_status(),
         )
 
-        return ExecutionResult(report=report, events=self._events)
+        self._execution_result = ExecutionResult(report=report, events=self._events)
 
 
 class LimitOrderExecution(OrderExecution):
@@ -88,7 +92,7 @@ class LimitOrderExecution(OrderExecution):
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
 
-    def execute(self) -> ExecutionResult:
+    def _do_execute(self) -> ExecutionResult:
 
         self._match()
         if not self.order.is_filled:
@@ -106,7 +110,7 @@ class MarketOrderExecution(OrderExecution):
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
 
-    def execute(self) -> ExecutionResult:
+    def _do_execute(self) -> ExecutionResult:
         self._match()
 
         return self._build_result()
