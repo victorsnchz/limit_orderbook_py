@@ -153,13 +153,11 @@ class OrderBook:
         while not (aggressor.is_filled or queue.is_empty):
             resting = queue.next_order_to_execute
             snapshot_resting = resting.snapshot()
-            snapshot_aggressor = aggressor.snapshot()
 
             filled_qty = resting.fill(aggressor.remaining_quantity)
             aggressor.fill(filled_qty)
 
             filled_payload = FilledPayload(
-                aggressor=snapshot_aggressor,
                 resting=snapshot_resting,
                 filled_qty=filled_qty,
             )

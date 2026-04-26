@@ -428,14 +428,7 @@ class TestFillTop(OrderbookBase):
         target_payloads = []
         for i, order in enumerate(resting):
             snapshot_resting = order.snapshot()
-            snapshot_aggressor = aggressor.snapshot()
-            aggressor_remaining = aggressor.initial_quantity - 100 * i
-            snapshot_aggressor = replace(
-                snapshot_aggressor, remaining_quantity=aggressor_remaining
-            )
-            target_payloads.append(
-                FilledPayload(snapshot_aggressor, snapshot_resting, filled_qty=100)
-            )
+            target_payloads.append(FilledPayload(snapshot_resting, filled_qty=100))
 
             self.orderbook.bid_side.top_level.add_order(order)
             self.orderbook._order_index[order.order_id] = (
