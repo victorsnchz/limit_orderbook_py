@@ -25,7 +25,6 @@ class OrderExecution(ABC):
         self.order: Order = order
         self.orderbook: OrderBook = orderbook
         self._opposite_book_side: BookSide = self.orderbook.get_opposite_book_side()
-        self._filled_payloads = []
         self._events: list[Event]
         self._posted: bool = False
 
@@ -47,12 +46,11 @@ class OrderExecution(ABC):
         )
         return self.order.can_cross(best_price)
 
-    def _match(self) -> list[Event]:
-        filled_payloads = []
-        while not self.order.is_filled and self._can_match_order():
-            filled_payloads += self.orderbook.fill_top(self.order)
+    def _match(self) -> None:
 
-        return [Event(EventKind.FILLED, payload) for payload in filled_payloads]
+        while not self.order.is_filled and self._can_match_order():
+            payload = self.orderbook.fill_top(self.order)
+            self._events.append(Event(kind=EventKind.FILLED, payload=payload))
 
     def _record_accepted(self) -> None:
         payload = AcceptedPayload(self.order.snapshot())
