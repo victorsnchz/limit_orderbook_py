@@ -80,6 +80,13 @@ class OrderExecution(ABC):
 
         self._execution_result = ExecutionResult(report=report, events=self._events)
 
+    def get_execution_result(self) -> ExecutionResult:
+        if self._execution_result is None:
+            raise RuntimeError(
+                "must first call 'execute()' prior to get_execution_result"
+            )
+        return self._execution_result
+
 
 class LimitOrderExecution(OrderExecution):
     """
@@ -90,7 +97,7 @@ class LimitOrderExecution(OrderExecution):
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
 
-    def _do_execute(self) -> ExecutionResult:
+    def _do_execute(self) -> None:
 
         self._match()
         if not self.order.is_filled:
@@ -106,7 +113,7 @@ class MarketOrderExecution(OrderExecution):
     def __init__(self, order: Order, orderbook):
         super().__init__(order, orderbook)
 
-    def _do_execute(self) -> ExecutionResult:
+    def _do_execute(self) -> None:
         self._match()
 
 
