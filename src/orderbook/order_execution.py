@@ -25,7 +25,7 @@ class OrderExecution(ABC):
         self.order: Order = order
         self.orderbook: OrderBook = orderbook
         self._opposite_book_side: BookSide = self.orderbook.get_opposite_book_side()
-        self._filled_payloads = [FilledPayload]
+        self._filled_payloads = []
         self._events: list[Event]
         self._posted: bool = False
 
