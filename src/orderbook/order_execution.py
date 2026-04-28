@@ -24,7 +24,9 @@ class OrderExecution(ABC):
     def __init__(self, order: Order, orderbook: OrderBook):
         self.order: Order = order
         self.orderbook: OrderBook = orderbook
-        self._opposite_book_side: BookSide = self.orderbook.get_opposite_book_side()
+        self._opposite_book_side: BookSide = self.orderbook.get_opposite_book_side(
+            self.order.side
+        )
         self._events: list[Event]
         self._posted: bool = False
 
