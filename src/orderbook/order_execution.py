@@ -49,8 +49,9 @@ class OrderExecution(ABC):
     def _match(self) -> None:
 
         while not self.order.is_filled and self._can_match_order():
-            payload = self.orderbook.fill_top(self.order)
-            self._events.append(Event(kind=EventKind.FILLED, payload=payload))
+            payloads = self.orderbook.fill_top(self.order)
+            for payload in payloads:
+                self._events.append(Event(kind=EventKind.FILLED, payload=payload))
 
     def _record_accepted(self) -> None:
         payload = AcceptedPayload(self.order.snapshot())
