@@ -104,6 +104,8 @@ class LimitOrderExecution(OrderExecution):
         if not self.order.is_filled:
             self.orderbook.post_order(self.order)
 
+            self._record_posted()
+
 
 class MarketOrderExecution(OrderExecution):
     """
