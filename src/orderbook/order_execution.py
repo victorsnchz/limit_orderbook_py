@@ -76,7 +76,6 @@ class OrderExecution(ABC):
     def _build_result(self) -> None:
         report = ExecutionReport(
             aggresssor=self.order.snapshot(),
-            fills=self._filled_payloads,
             posted=self._posted,
             status=self._compute_status(),
         )

@@ -82,7 +82,6 @@ class Event:
 @dataclass(frozen=True)
 class ExecutionReport:
     aggresssor: OrderSnapshot
-    fills: list[FilledPayload]
     posted: bool
     status: FillStatus
 
