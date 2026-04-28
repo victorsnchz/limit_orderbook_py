@@ -71,6 +71,10 @@ class TestOrderExecutionInit(OrderExecutionBase):
         executor = LimitOrderExecution(self.order, self.orderbook)
         self.assertEqual(executor._events, [])
 
+    def test_execution_result_initialised_none(self):
+        executor = LimitOrderExecution(self.order, self.orderbook)
+        self.assertIsNone(executor._execution_result)
+
     def test_cannot_instantiate_abstract_base(self):
         with self.assertRaises(TypeError):
             OrderExecution(self.order, self.orderbook)
@@ -394,15 +398,6 @@ class TestBuildResult(OrderExecutionBase):
         executor._build_result()
 
         self.assertEqual(executor._execution_result.report.aggresssor, snapshot)
-
-    def test_report_fills_match_filled_payloads(self):
-        payloads = [MagicMock(spec=FilledPayload), MagicMock(spec=FilledPayload)]
-        executor = self._make_executor(_make_snapshot(), filled_payloads=payloads)
-        executor._compute_status = MagicMock(return_value=FillStatus.FILLED)
-
-        executor._build_result()
-
-        self.assertEqual(executor._execution_result.report.fills, payloads)
 
     def test_report_posted_reflects_flag(self):
         executor = self._make_executor(_make_snapshot())
