@@ -29,6 +29,7 @@ class OrderExecution(ABC):
         )
         self._events: list[Event] = []
         self._posted: bool = False
+        self._execution_result: None | ExecutionResult = None
 
     def execute(self) -> ExecutionResult:
         self._do_execute()
