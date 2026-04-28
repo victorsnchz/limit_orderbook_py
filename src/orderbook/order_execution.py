@@ -27,7 +27,7 @@ class OrderExecution(ABC):
         self._opposite_book_side: BookSide = self.orderbook.get_opposite_book_side(
             self.order.side
         )
-        self._events: list[Event]
+        self._events: list[Event] = []
         self._posted: bool = False
 
     def execute(self) -> ExecutionResult:
