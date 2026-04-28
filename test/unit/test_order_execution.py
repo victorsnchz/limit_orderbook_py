@@ -67,6 +67,10 @@ class TestOrderExecutionInit(OrderExecutionBase):
         executor = LimitOrderExecution(self.order, self.orderbook)
         self.assertFalse(executor._posted)
 
+    def test_events_initialised_empty_list(self):
+        executor = LimitOrderExecution(self.order, self.orderbook)
+        self.assertEqual(executor._events, [])
+
     def test_cannot_instantiate_abstract_base(self):
         with self.assertRaises(TypeError):
             OrderExecution(self.order, self.orderbook)
@@ -622,9 +626,7 @@ class TestOrderTypeExecutionMap(unittest.TestCase):
     """
 
     def test_limit_maps_to_limit_order_execution(self):
-        self.assertIs(
-            map_order_type_to_execution[OrderType.LIMIT], LimitOrderExecution
-        )
+        self.assertIs(map_order_type_to_execution[OrderType.LIMIT], LimitOrderExecution)
 
     def test_market_maps_to_market_order_execution(self):
         self.assertIs(
