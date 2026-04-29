@@ -164,3 +164,4 @@ cython_debug/
 test_data/**/results/
 .DS_Store
 **/.DS_Store
+*.bash
