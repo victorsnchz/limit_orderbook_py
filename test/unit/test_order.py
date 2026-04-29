@@ -12,6 +12,8 @@ from src.bookkeeping.custom_types import OrderType, Side, ExecutionRule
 
 
 class TestOrderConstruction(unittest.TestCase):
+    """Initial state and field accessors after `Order(spec, id)`."""
+
     def test_remaining_equals_initial_on_init(self):
         specs = OrderSpec(
             side=Side.BID,
@@ -98,6 +100,8 @@ class TestOrderConstruction(unittest.TestCase):
 
 
 class TestOrderFill(unittest.TestCase):
+    """`fill(qty)`: clamps to remaining, returns filled amount, flips `is_filled`."""
+
     def setUp(self):
         specs = OrderSpec(
             side=Side.BID,
@@ -145,6 +149,8 @@ class TestOrderFill(unittest.TestCase):
 
 
 class TestOrderReduce(unittest.TestCase):
+    """`reduce(qty)`: must strictly shrink remaining, else raises."""
+
     def setUp(self):
         specs = OrderSpec(
             side=Side.BID,
@@ -170,6 +176,8 @@ class TestOrderReduce(unittest.TestCase):
 
 
 class TestOrderSpec(unittest.TestCase):
+    """`OrderSpec` construction-time validation."""
+
     def test_limit_order_no_limit_price_raises(self):
         with self.assertRaises(ValueError):
             OrderSpec(
@@ -182,6 +190,8 @@ class TestOrderSpec(unittest.TestCase):
 
 
 class TestSnapshot(unittest.TestCase):
+    """`Order.snapshot()`: immutable point-in-time copy, no aliasing."""
+
     def setUp(self):
 
         self.spec = OrderSpec(
