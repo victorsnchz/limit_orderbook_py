@@ -89,6 +89,7 @@ class TestExecute(OrderExecutionBase):
     def _make_executor_with_mocked_pipeline(self, execution_result=None):
         executor = LimitOrderExecution(self.order, self.orderbook)
         executor._do_execute = MagicMock()
+        executor._validate_order = MagicMock(return_value=AcceptedPayload(self.order))
         executor._build_result = MagicMock()
         executor._execution_result = execution_result
         return executor
@@ -272,40 +273,39 @@ class TestRecordAccepted(OrderExecutionBase):
     snapshot.
     """
 
-    def _make_executor(self, snapshot):
-        self.order.snapshot.return_value = snapshot
-        executor = LimitOrderExecution(self.order, self.orderbook)
-        executor._events = []
-        return executor
+    def setUp(self):
+        super().setUp()
+
+        self.snapshot = _make_snapshot()
+        self.order.snapshot.return_value = self.snapshot
+        self.executor = LimitOrderExecution(self.order, self.orderbook)
+        self.executor._events = []
 
     def test_appends_single_event(self):
-        executor = self._make_executor(_make_snapshot())
 
-        executor._record_accepted()
+        self.executor._record_accepted(AcceptedPayload(self.snapshot))
 
-        self.assertEqual(len(executor._events), 1)
+        self.assertEqual(len(self.executor._events), 1)
 
     def test_event_kind_is_accepted(self):
-        executor = self._make_executor(_make_snapshot())
 
-        executor._record_accepted()
+        self.executor._record_accepted(AcceptedPayload(self.snapshot))
 
-        self.assertEqual(executor._events[0].kind, EventKind.ACCEPTED)
+        self.assertEqual(self.executor._events[0].kind, EventKind.ACCEPTED)
 
     def test_event_payload_is_accepted_payload_with_snapshot(self):
-        snapshot = _make_snapshot()
-        executor = self._make_executor(snapshot)
 
-        executor._record_accepted()
+        self.executor._record_accepted(AcceptedPayload(self.snapshot))
 
-        self.assertEqual(executor._events[0].payload, AcceptedPayload(snapshot))
+        self.assertEqual(
+            self.executor._events[0].payload, AcceptedPayload(self.snapshot)
+        )
 
     def test_does_not_set_posted_flag(self):
-        executor = self._make_executor(_make_snapshot())
 
-        executor._record_accepted()
+        self.executor._record_accepted(AcceptedPayload(self.snapshot))
 
-        self.assertFalse(executor._posted)
+        self.assertFalse(self.executor._posted)
 
 
 class TestRecordPosted(OrderExecutionBase):
@@ -387,7 +387,7 @@ class TestBuildResult(OrderExecutionBase):
         self.order.snapshot.return_value = snapshot
         executor = LimitOrderExecution(self.order, self.orderbook)
         executor._events = [] if events is None else events
-        executor._filled_payloads = [] if filled_payloads is None else filled_payloads
+        # executor._filled_payloads = [] if filled_payloads is None else filled_payloads
         return executor
 
     def test_report_aggressor_is_order_snapshot(self):
@@ -397,7 +397,7 @@ class TestBuildResult(OrderExecutionBase):
 
         executor._build_result()
 
-        self.assertEqual(executor._execution_result.report.aggresssor, snapshot)
+        self.assertEqual(executor._execution_result.report.aggressor, snapshot)
 
     def test_report_posted_reflects_flag(self):
         executor = self._make_executor(_make_snapshot())
