@@ -3,12 +3,12 @@ from src.orderbook.orderbook import OrderBook
 from src.orderbook.book_side import BookSide
 from src.bookkeeping.custom_types import (
     OrderType,
-    FilledPayload,
     Event,
     ExecutionResult,
     FillStatus,
     PostedPayload,
     AcceptedPayload,
+    RejectedPayload,
     EventKind,
     ExecutionReport,
 )
@@ -31,9 +31,31 @@ class OrderExecution(ABC):
         self._posted: bool = False
         self._execution_result: None | ExecutionResult = None
 
+    def _validate_order(self) -> AcceptedPayload | RejectedPayload:
+
+        if self.order.order_id in self.orderbook:
+            return RejectedPayload(self.order.snapshot(), "duplicate order id")
+        if self.order.initial_quantity <= 0:
+            return RejectedPayload(self.order.snapshot(), "non-positive quantity")
+        if self.order.is_filled:
+            return RejectedPayload(self.order.snapshot(), "order already filled")
+        return self._validate_type_specific()
+
+    @abstractmethod
+    def _validate_type_specific(self) -> AcceptedPayload | RejectedPayload: ...
+
     def execute(self) -> ExecutionResult:
-        self._do_execute()
-        self._build_result()
+
+        validation_payload = self._validate_order()
+
+        if isinstance(validation_payload, RejectedPayload):
+            self._record_rejected(validation_payload)
+            self._build_result()
+
+        else:
+            self._record_accepted(validation_payload)
+            self._do_execute()
+            self._build_result()
         return self._execution_result
 
     @abstractmethod
@@ -56,8 +78,11 @@ class OrderExecution(ABC):
             for payload in payloads:
                 self._events.append(Event(kind=EventKind.FILLED, payload=payload))
 
-    def _record_accepted(self) -> None:
-        payload = AcceptedPayload(self.order.snapshot())
+    def _record_rejected(self, payload: RejectedPayload) -> None:
+        kind = EventKind.REJECTED
+        self._events.append(Event(kind=kind, payload=payload))
+
+    def _record_accepted(self, payload: AcceptedPayload) -> None:
         kind = EventKind.ACCEPTED
         self._events.append(Event(kind=kind, payload=payload))
 
@@ -107,6 +132,16 @@ class LimitOrderExecution(OrderExecution):
 
             self._record_posted()
 
+    def _validate_type_specific(self) -> AcceptedPayload | RejectedPayload:
+        if self.order.limit_price is None:
+            return RejectedPayload(
+                self.order.snapshot(), "limit order missing limit price"
+            )
+        if self.order.limit_price <= 0:
+            return RejectedPayload(self.order.snapshot(), "non-positive limit price")
+        # backlog - check type?
+        return AcceptedPayload(self.order.snapshot())
+
 
 class MarketOrderExecution(OrderExecution):
     """
@@ -117,6 +152,9 @@ class MarketOrderExecution(OrderExecution):
     def _do_execute(self) -> None:
         self._match()
 
+    def _validate_type_specific(self) -> AcceptedPayload:
+        return AcceptedPayload(self.order.snapshot())
+
 
 map_order_type_to_execution = {
     OrderType.LIMIT: LimitOrderExecution,
@@ -124,6 +162,6 @@ map_order_type_to_execution = {
 }
 
 
-def execute_order(order: Order, orderbook: OrderBook) -> None:
+def execute_order(order: Order, orderbook: OrderBook) -> ExecutionResult:
     executor = map_order_type_to_execution[order.order_type](order, orderbook)
-    executor.execute()
+    return executor.execute()

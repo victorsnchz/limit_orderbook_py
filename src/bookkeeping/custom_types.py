@@ -46,14 +46,21 @@ class FillStatus(enum.Enum):
 
 class EventKind(enum.Enum):
     ACCEPTED = enum.auto()
+    REJECTED = enum.auto()
     FILLED = enum.auto()
     POSTED = enum.auto()
-    # backlog: REJECTED, CANCELLED, MODIFIED
+    # backlog: CANCELLED, MODIFIED
 
 
 @dataclass(frozen=True)
 class AcceptedPayload:
     aggressor: OrderSnapshot
+
+
+@dataclass(frozen=True)
+class RejectedPayload:
+    aggressor: OrderSnapshot
+    rejected_reason: str
 
 
 @dataclass(frozen=True)
@@ -81,7 +88,7 @@ class Event:
 
 @dataclass(frozen=True)
 class ExecutionReport:
-    aggresssor: OrderSnapshot
+    aggressor: OrderSnapshot
     posted: bool
     status: FillStatus
 
