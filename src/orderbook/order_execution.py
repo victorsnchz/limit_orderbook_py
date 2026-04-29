@@ -76,12 +76,14 @@ class OrderExecution(ABC):
 
     def _build_result(self) -> None:
         report = ExecutionReport(
-            aggresssor=self.order.snapshot(),
+            aggressor=self.order.snapshot(),
             posted=self._posted,
             status=self._compute_status(),
         )
 
-        self._execution_result = ExecutionResult(report=report, events=self._events)
+        self._execution_result = ExecutionResult(
+            report=report, events=list(self._events)
+        )
 
     def get_execution_result(self) -> ExecutionResult:
         if self._execution_result is None:
@@ -97,9 +99,6 @@ class LimitOrderExecution(OrderExecution):
     If possible will match order against opposite side orders.. Remaining will be posted in book.
     """
 
-    def __init__(self, order: Order, orderbook):
-        super().__init__(order, orderbook)
-
     def _do_execute(self) -> None:
 
         self._match()
@@ -114,9 +113,6 @@ class MarketOrderExecution(OrderExecution):
     Execute market orders in order book.
     If possible will match order against opposite side.
     """
-
-    def __init__(self, order: Order, orderbook):
-        super().__init__(order, orderbook)
 
     def _do_execute(self) -> None:
         self._match()
