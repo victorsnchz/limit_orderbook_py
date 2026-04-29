@@ -1,3 +1,8 @@
+"""
+Two-sided limit order book with id-indexed O(1) order lookup.
+Owns book state and single-level matching; multi-level routing is the caller's job.
+"""
+
 from src.bookkeeping.custom_types import Side
 from src.orderbook.book_side import BidSide, AskSide, BookSide
 from src.bookkeeping.custom_types import FilledPayload, OrderType
@@ -7,8 +12,7 @@ from src.orders.order import Order
 
 class OrderBook:
     """
-    Order book data structure: stores and returns orders.
-    Orders stores in bids and asks structures.
+    Composes `BidSide` and `AskSide` with an id-keyed index for O(1) order lookup.
     """
 
     def __init__(self):
@@ -25,7 +29,7 @@ class OrderBook:
 
     def get_book_side(self, side: Side) -> BookSide:
         """
-        Return specified book side.
+        Return the matching book side.
         """
 
         if side == Side.BID:
@@ -37,7 +41,7 @@ class OrderBook:
 
     def get_opposite_book_side(self, side: Side) -> BookSide:
         """
-        Return opposite book side to the one specified.
+        Return the opposite book side.
         """
 
         if side == Side.BID:
@@ -49,7 +53,7 @@ class OrderBook:
 
     def get_bid_ask_mid(self) -> tuple[int, int, float]:
         """
-        Return current market best-bid, best-ask, mid.
+        Return `(best_bid, best_ask, mid)`. Raises if either side is empty.
         """
 
         if not self.bid_side.is_empty and not self.ask_side.is_empty:
@@ -64,7 +68,7 @@ class OrderBook:
 
     def get_states(self) -> tuple[dict, dict]:
         """
-        Return state for all levels on both sides: {price: (volume, #participants)}
+        Return `(bid_state, ask_state)` as `{price: (volume, n_participants)}`.
         """
 
         bids_state = self.bid_side.get_states()
@@ -74,7 +78,7 @@ class OrderBook:
 
     def get_top_state(self) -> tuple[dict, dict]:
         """
-        Return state for top-of-book ONLY on both sides: {price: (total_volume, #participants)}
+        Return top-of-book state per side as `{price: (volume, n_participants)}`.
         """
 
         bids_top_state = self.bid_side.get_top_state()
@@ -84,7 +88,7 @@ class OrderBook:
 
     def get_volumes(self) -> tuple[dict[float, int], dict[float, int]]:
         """
-        Return volumes for all levels on both sides: {price: total_volume}
+        Return `(bid_volumes, ask_volumes)` as `{price: total_volume}`.
         """
 
         bid_volumes, ask_volumes = (
@@ -95,6 +99,9 @@ class OrderBook:
         return bid_volumes, ask_volumes
 
     def get_order(self, order_id: int) -> Order:
+        """
+        Return the resting order with `order_id`. Raises `InvalidOrderError` if absent.
+        """
 
         if order_id not in self._order_index:
             raise InvalidOrderError(f"order {order_id} not in book")
@@ -107,6 +114,11 @@ class OrderBook:
         return order_id in self._order_index
 
     def post_order(self, order: Order) -> None:
+        """
+        Admit a non-crossing LIMIT `order` to its side and index it by id.
+        Raises on non-LIMIT type, duplicate id, filled order, or a price that
+        would cross the opposite top.
+        """
 
         if order.order_type is not OrderType.LIMIT:
             raise InvalidOrderError(
@@ -137,6 +149,11 @@ class OrderBook:
     def cancel_order(self, order_id: int) -> None: ...
 
     def fill_top(self, order: Order) -> list[FilledPayload]:
+        """
+        Match `order` against the opposite top level under price-time priority.
+        Stops when the aggressor fills or the level exhausts. Returns one
+        `FilledPayload` per touched resting order.
+        """
 
         filled_payloads = []
         aggressor = order

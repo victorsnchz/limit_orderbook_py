@@ -269,22 +269,7 @@ class TestGetVolumes(OrderbookBase):
 
 class TestFillTop(OrderbookBase):
     """
-    TestFillTop using Order and OrdersQueue instead of mocks.
-    Only BookSide mocked: class with most non-trivial logic.
-
-    OrderbookBase.setUp provides:
-        self.orderbook.bid_side = MagicMock(spec=BookSide)
-        self.orderbook.ask_side = MagicMock(spec=BookSide)
-
-    Per-test typical setup:
-        - build real resting orders via self._make_limit_order
-        - add to real OrdersQueue self.queue
-        - confifure mocked opposite BookSide:
-            - opposite.top_level = self.queue
-            - opposite.is_empty = False
-            - opposite.best_price = <price used by resting>
-        - pre-populate self.orderbook._order_index for each resting id (so del inside
-         fill does not raise a KeyError)
+    `fill_top` against real `Order`/`OrdersQueue`; only `BookSide` is mocked.
     """
 
     def setUp(self):

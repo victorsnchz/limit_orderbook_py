@@ -5,6 +5,10 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class OrderSpec:
+    """
+    Immutable order parameters. LIMIT orders require a `limit_price`.
+    """
+
     side: Side
     order_type: OrderType
     quantity: int
@@ -27,7 +31,7 @@ class OrderID:
 
 class Order:
     """
-    Store order informations and any relevant order updates.
+    Mutable order: immutable spec/identity views plus a draining `remaining_quantity`.
     """
 
     def __init__(self, spec: OrderSpec, id: OrderID):
@@ -76,6 +80,10 @@ class Order:
     # --- other methods ---
 
     def can_cross(self, opposite_best_price: int | None) -> bool:
+        """
+        Return whether this order would cross given the opposite top.
+        False if the opposite is empty; True for MARKET orders.
+        """
 
         if opposite_best_price is None:
             return False
@@ -91,6 +99,10 @@ class Order:
     # --- mutable states ---
 
     def fill(self, quantity: int) -> int:
+        """
+        Drain up to `quantity` from `remaining_quantity` and return what was taken.
+        Returns 0 if `quantity` is non-positive or the order is already filled.
+        """
 
         if min(quantity, self.remaining_quantity) <= 0:
             return 0
@@ -102,6 +114,9 @@ class Order:
         return filled
 
     def reduce(self, new_quantity: int) -> None:
+        """
+        Lower `remaining_quantity` to `new_quantity`. Raises if it would not strictly reduce.
+        """
 
         if new_quantity >= self.remaining_quantity:
             raise ValueError(

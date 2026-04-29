@@ -24,16 +24,7 @@ from src.bookkeeping.custom_types import (
 
 class OrderExecutionBase(unittest.TestCase):
     """
-    Shared fixture for OrderExecution tests.
-
-    Provides:
-        self.order: MagicMock(spec=Order)
-        self.orderbook: MagicMock(spec=OrderBook)
-        self.opposite_side: MagicMock(spec=BookSide) returned by
-            self.orderbook.get_opposite_book_side()
-
-    Subclasses instantiate a concrete OrderExecution under test (typically
-    LimitOrderExecution or MarketOrderExecution) on top of these mocks.
+    Shared mocks for OrderExecution tests: `order`, `orderbook`, `opposite_side`.
     """
 
     def setUp(self):
@@ -45,9 +36,7 @@ class OrderExecutionBase(unittest.TestCase):
 
 class TestOrderExecutionInit(OrderExecutionBase):
     """
-    Construction-time wiring for OrderExecution: stored references and initial
-    flags. Uses LimitOrderExecution as a concrete stand-in for the abstract
-    base.
+    Construction-time wiring: stored references and initial flag values.
     """
 
     def test_stores_order_reference(self):
@@ -82,8 +71,7 @@ class TestOrderExecutionInit(OrderExecutionBase):
 
 class TestExecute(OrderExecutionBase):
     """
-    Public execute() entry point: delegation to _do_execute / _build_result and
-    return value.
+    `execute()`: delegates to `_do_execute` then `_build_result`, returns the result.
     """
 
     def _make_executor_with_mocked_pipeline(self, execution_result=None):
@@ -122,8 +110,7 @@ class TestExecute(OrderExecutionBase):
 
 class TestCanMatchOrder(OrderExecutionBase):
     """
-    _can_match_order delegates to order.can_cross with the opposite side's best
-    price (or None when the opposite side is empty).
+    `_can_match_order` forwards opposite best price (or `None`) to `order.can_cross`.
     """
 
     def test_passes_best_price_when_opposite_non_empty(self):
@@ -167,8 +154,7 @@ class TestCanMatchOrder(OrderExecutionBase):
 
 class TestMatch(OrderExecutionBase):
     """
-    _match loop: repeatedly calls orderbook.fill_top while order is unfilled and
-    can match, appending FILLED events for every returned payload.
+    `_match` loops `fill_top` while unfilled and matchable, recording FILLED events.
     """
 
     def _make_executor(self):

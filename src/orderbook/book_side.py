@@ -13,9 +13,8 @@ from typing import KeysView
 
 class BookSide(ABC):
     """
-    Store order queues in a tree map.
-    O(1) access to top of book (likely most accessed book layer).
-    O(nlogn) access to each price level.
+    One side of the book: price levels in a SortedDict, each holding a FIFO queue.
+    O(1) at the top, O(log n) at arbitrary levels.
     """
 
     def __init__(self):
@@ -30,13 +29,13 @@ class BookSide(ABC):
     @property
     def is_empty(self) -> bool:
         """
-        Check if level is empty.
+        Whether this side holds zero levels.
         """
         return not bool(self._levels)
 
     def post_order(self, order: Order) -> None:
         """
-        Add order to queue at approriate price level. If no level exists create it.
+        Append `order` at its limit price, creating the level if absent.
         """
 
         if order.limit_price not in self._levels:
@@ -46,6 +45,9 @@ class BookSide(ABC):
 
     # TODO: fix with correct indxing logic, raise exceptions
     def get_order(self, price, order_id) -> Order:
+        """
+        Return the order at `price` with `order_id`. Raises `OrderNotFoundError` if absent.
+        """
 
         try:
             return self.get_level(price).get_order(order_id)
@@ -58,7 +60,7 @@ class BookSide(ABC):
     @abstractmethod
     def best_price(self) -> int:
         """
-        Return top-of-book price.
+        Best price on this side. Raises `EmptyBookSideError` if empty.
         """
         pass
 
@@ -66,13 +68,13 @@ class BookSide(ABC):
     @abstractmethod
     def top_level(self) -> OrdersQueue:
         """
-        Return top-of-book queue.
+        Queue at the best price. Raises `EmptyBookSideError` if empty.
         """
         pass
 
     def is_level_empty(self, price: int):
         """
-        Check if there exists an order queue at input price.
+        Whether the queue at `price` is empty. Raises `PriceLevelNotFoundError` if absent.
         """
         try:
             return self._levels[price].is_empty
@@ -83,7 +85,7 @@ class BookSide(ABC):
 
     def delete_level(self, price: int):
         """
-        Delete queue at given price.
+        Drop the level at `price`. Raises `PriceLevelNotFoundError` if absent.
         """
         try:
             del self._levels[price]
@@ -94,7 +96,7 @@ class BookSide(ABC):
 
     def get_states(self) -> dict[int, LevelState]:
         """
-        Return state for all price levels
+        Return `{price: LevelState}` for every level on this side.
         """
         states = {}
 
@@ -105,6 +107,9 @@ class BookSide(ABC):
 
     # TODO: untitest
     def get_level(self, price: int) -> OrdersQueue:
+        """
+        Return the queue at `price`. Raises `PriceLevelNotFoundError` if absent.
+        """
         try:
             return self._levels[price]
         except KeyError:
@@ -114,7 +119,7 @@ class BookSide(ABC):
 
     def get_top_state(self) -> dict[int, LevelState]:
         """
-        Return state for top-of-book ONLY: {price: (total_volume, #participants)}
+        Return `{best_price: LevelState}`, or `{}` if this side is empty.
         """
 
         if self.is_empty:
@@ -127,7 +132,7 @@ class BookSide(ABC):
 
     def get_volumes(self) -> dict[float, int]:
         """
-        Return volumes for all price levels: {price: total_volume}
+        Return `{price: total_volume}` for every level on this side.
         """
 
         volumes = SortedDict()
@@ -140,7 +145,7 @@ class BookSide(ABC):
 
 class BidSide(BookSide):
     """
-    Bids prices sorted from highest-to-lowest. Stored in SortedDicts as asks BUT returns order are inverted.
+    Bid side: best price is the highest. Iteration order is reversed vs. ask.
     """
 
     @property
@@ -158,11 +163,18 @@ class BidSide(BookSide):
             raise EmptyBookSideError("book side is empty cannot get top level")
 
     def get_volumes(self):
+        """
+        Same shape as the base, but iterated highest-price-first.
+        """
         volumes = super().get_volumes()
         return dict(reversed(volumes.items()))
 
 
 class AskSide(BookSide):
+    """
+    Ask side: best price is the lowest.
+    """
+
     def __init__(self):
         super().__init__()
 

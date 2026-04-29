@@ -10,9 +10,7 @@ from src.bookkeeping.custom_types import LevelState
 
 class OrdersQueue:
     """
-    Store orders in a queue at each price level.
-    FIFO.
-    Handle adding, removing, getting next order to match against.
+    FIFO queue of orders at a single price level, keyed by `order_id`.
     """
 
     def __init__(self):
@@ -29,7 +27,7 @@ class OrdersQueue:
 
     def add_order(self, order: Order):
         """
-        Add order last in queue if not already in queue.
+        Append `order` to the tail. Raises `DuplicateOrderError` if its id is already queued.
         """
 
         if order.order_id not in self:
@@ -39,13 +37,17 @@ class OrdersQueue:
 
     def remove_order(self, order_id: int) -> Order:
         """
-        Pop order from queue.
+        Pop and return the order with `order_id`. Asserts non-empty and present.
         """
         assert not self.is_empty, "remove_order raised on empty queue"
         assert order_id in self, "removing order not in queue"
         return self._queue.pop(order_id)
 
     def get_state(self) -> LevelState:
+        """
+        Aggregate the queue into total volume, order count, and unique participant count.
+        Asserts non-empty.
+        """
         assert not self.is_empty, "get_state called on empty queue, invariant violation"
         total_volume = 0
         order_count = 0
@@ -59,6 +61,9 @@ class OrdersQueue:
         return LevelState(total_volume, order_count, len(participants))
 
     def get_volume(self) -> int:
+        """
+        Sum of `remaining_quantity` across the queue. Returns 0 if empty.
+        """
         volume = 0
         for order in self._queue.values():
             volume += order.remaining_quantity
@@ -67,6 +72,9 @@ class OrdersQueue:
 
     # TODO: unittest
     def get_order(self, order_id: int) -> Order:
+        """
+        Return the order with `order_id`. Raises `OrderNotFoundError` if absent.
+        """
         try:
             return self._queue[order_id]
         except KeyError:
@@ -75,14 +83,14 @@ class OrdersQueue:
     @property
     def is_empty(self) -> bool:
         """
-        Check if queue is empty.
+        Whether the queue holds zero orders.
         """
         return not bool(self._queue)
 
     @property
     def next_order_to_execute(self) -> Order:
         """
-        Return next order to be matched against.
+        Head of the FIFO. Raises `EmptyQueueError` if empty.
         """
         if self.is_empty:
             raise EmptyQueueError("queue is empty no order to execute")
@@ -91,7 +99,7 @@ class OrdersQueue:
     @property
     def tail(self) -> Order:
         """
-        Last order in FIFO sequence. Precondition: not empty.
+        Tail of the FIFO. Raises `EmptyQueueError` if empty.
         """
 
         if self.is_empty:

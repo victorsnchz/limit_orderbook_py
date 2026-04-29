@@ -8,6 +8,11 @@ from src.orders.order_id_generator import OrderIdGenerator
 
 
 class OrderFactory(ABC):
+    """
+    Build `Order`s with ids drawn from a shared `OrderIdGenerator`.
+    Concrete subclasses set the `OrderType` and accept type-specific kwargs.
+    """
+
     def __init__(self, generator: OrderIdGenerator):
         self._generator = generator
 

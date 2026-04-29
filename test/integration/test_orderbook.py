@@ -225,10 +225,8 @@ class TestQueries(OrderBookIntegrationBase):
 
 class TestPriceTimePriorityStructural(OrderBookIntegrationBase):
     """
-    Without matching or cancel, we can only verify the STRUCTURAL half of
-    price-time priority: that posts land in the right level and in the
-    right FIFO position. The behavioural half (who gets filled first)
-    is tested in test_order_execution.py.
+    Structural half of price-time priority: posts land in the right level and
+    FIFO slot. Behavioural half lives in test_order_execution.py.
     """
 
     def test_posts_at_same_price_queue_in_post_order(self):

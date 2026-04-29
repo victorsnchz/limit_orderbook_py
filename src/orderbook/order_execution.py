@@ -18,7 +18,8 @@ from abc import ABC, abstractmethod
 
 class OrderExecution(ABC):
     """
-    Parent class for order execution.
+    Validate, match, and report on a single aggressor order against the book.
+    Subclasses define order-type-specific validation and post-match disposition.
     """
 
     def __init__(self, order: Order, orderbook: OrderBook):
@@ -32,6 +33,9 @@ class OrderExecution(ABC):
         self._execution_result: None | ExecutionResult = None
 
     def _validate_order(self) -> AcceptedPayload | RejectedPayload:
+        """
+        Run shared sanity checks then defer to `_validate_type_specific`.
+        """
 
         if self.order.order_id in self.orderbook:
             return RejectedPayload(self.order.snapshot(), "duplicate order id")
@@ -45,6 +49,10 @@ class OrderExecution(ABC):
     def _validate_type_specific(self) -> AcceptedPayload | RejectedPayload: ...
 
     def execute(self) -> ExecutionResult:
+        """
+        Validate, then either record the rejection or run `_do_execute`. Always
+        produces an `ExecutionResult`, also cached for `get_execution_result`.
+        """
 
         validation_payload = self._validate_order()
 
@@ -62,8 +70,10 @@ class OrderExecution(ABC):
     def _do_execute(self): ...
 
     def _can_match_order(self) -> bool:
-        # if opposite side empty will pass a None price to order.can_cross()
-        # may have to review this logic, not obvious at first read
+        """
+        Whether the aggressor would cross the opposite top.
+        Passes `None` to `Order.can_cross` when the opposite side is empty.
+        """
         best_price = (
             None
             if self._opposite_book_side.is_empty
@@ -72,6 +82,10 @@ class OrderExecution(ABC):
         return self.order.can_cross(best_price)
 
     def _match(self) -> None:
+        """
+        Drive `fill_top` across price levels until the aggressor fills or the
+        opposite side stops crossing, recording one FILLED event per touched resting.
+        """
 
         while not self.order.is_filled and self._can_match_order():
             payloads = self.orderbook.fill_top(self.order)
@@ -100,6 +114,9 @@ class OrderExecution(ABC):
         return FillStatus.PARTIALLY_FILLED
 
     def _build_result(self) -> None:
+        """
+        Snapshot the aggressor and freeze the recorded events into `_execution_result`.
+        """
         report = ExecutionReport(
             aggressor=self.order.snapshot(),
             posted=self._posted,
@@ -111,6 +128,9 @@ class OrderExecution(ABC):
         )
 
     def get_execution_result(self) -> ExecutionResult:
+        """
+        Return the cached result. Raises `RuntimeError` if `execute` has not run.
+        """
         if self._execution_result is None:
             raise RuntimeError(
                 "must first call 'execute()' prior to get_execution_result"
@@ -120,8 +140,7 @@ class OrderExecution(ABC):
 
 class LimitOrderExecution(OrderExecution):
     """
-    Execute limit orders in order book.
-    If possible will match order against opposite side orders.. Remaining will be posted in book.
+    Match against the opposite side, then post any residual to the book.
     """
 
     def _do_execute(self) -> None:
@@ -133,6 +152,9 @@ class LimitOrderExecution(OrderExecution):
             self._record_posted()
 
     def _validate_type_specific(self) -> AcceptedPayload | RejectedPayload:
+        """
+        Reject if the limit price is missing or non-positive.
+        """
         if self.order.limit_price is None:
             return RejectedPayload(
                 self.order.snapshot(), "limit order missing limit price"
@@ -145,8 +167,7 @@ class LimitOrderExecution(OrderExecution):
 
 class MarketOrderExecution(OrderExecution):
     """
-    Execute market orders in order book.
-    If possible will match order against opposite side.
+    Match against the opposite side; never posts residual.
     """
 
     def _do_execute(self) -> None:
@@ -163,5 +184,8 @@ map_order_type_to_execution = {
 
 
 def execute_order(order: Order, orderbook: OrderBook) -> ExecutionResult:
+    """
+    Run `order` through the executor matching its `order_type` and return the result.
+    """
     executor = map_order_type_to_execution[order.order_type](order, orderbook)
     return executor.execute()

@@ -2,6 +2,10 @@ import threading
 
 
 class OrderIdGenerator:
+    """
+    Thread-safe monotonic id source.
+    """
+
     def __init__(self, start: int = 0):
         self._counter = start
         self._lock = threading.Lock()
