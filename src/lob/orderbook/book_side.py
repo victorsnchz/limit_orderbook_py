@@ -43,7 +43,6 @@ class BookSide(ABC):
 
         self._levels[order.limit_price].add_order(order)
 
-    # TODO: fix with correct indxing logic, raise exceptions
     def get_order(self, price, order_id) -> Order:
         """
         Return the order at `price` with `order_id`. Raises `OrderNotFoundError` if absent.
@@ -55,6 +54,12 @@ class BookSide(ABC):
             raise OrderNotFoundError(
                 f"order {order_id} not found at {price} price level"
             )
+
+    def delete_order(self, order_id: int, price: int) -> None:
+        level = self.get_level(price)
+        level.remove_order(order_id)
+        if level.is_empty:
+            self.delete_level(price)
 
     @property
     @abstractmethod
