@@ -1,7 +1,7 @@
-from src.orders.order import Order
-from src.orderbook.orderbook import OrderBook
-from src.orderbook.book_side import BookSide
-from src.bookkeeping.custom_types import (
+from lob.orders.order import Order
+from lob.orderbook.orderbook import OrderBook
+from lob.orderbook.book_side import BookSide
+from lob.bookkeeping.custom_types import (
     OrderType,
     Event,
     ExecutionResult,

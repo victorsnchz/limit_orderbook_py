@@ -1,11 +1,11 @@
 import collections
-from src.orders.order import Order
-from src.bookkeeping.exceptions import (
+from lob.orders.order import Order
+from lob.bookkeeping.exceptions import (
     EmptyQueueError,
     OrderNotFoundError,
     DuplicateOrderError,
 )
-from src.bookkeeping.custom_types import LevelState
+from lob.bookkeeping.custom_types import LevelState
 
 
 class OrdersQueue:

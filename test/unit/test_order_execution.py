@@ -1,16 +1,16 @@
 import unittest
 from unittest.mock import MagicMock, PropertyMock, patch
-from src.orderbook.order_execution import (
+from lob.orderbook.order_execution import (
     OrderExecution,
     LimitOrderExecution,
     MarketOrderExecution,
     map_order_type_to_execution,
     execute_order,
 )
-from src.orderbook.orderbook import OrderBook
-from src.orderbook.book_side import BookSide
-from src.orders.order import Order, OrderSnapshot
-from src.bookkeeping.custom_types import (
+from lob.orderbook.orderbook import OrderBook
+from lob.orderbook.book_side import BookSide
+from lob.orders.order import Order, OrderSnapshot
+from lob.bookkeeping.custom_types import (
     Side,
     OrderType,
     FillStatus,
@@ -634,7 +634,7 @@ class TestExecuteOrder(unittest.TestCase):
         mock_cls = MagicMock()
 
         with patch.dict(
-            "src.orderbook.order_execution.map_order_type_to_execution",
+            "lob.orderbook.order_execution.map_order_type_to_execution",
             {OrderType.LIMIT: mock_cls},
         ):
             execute_order(self.order, self.orderbook)
@@ -646,7 +646,7 @@ class TestExecuteOrder(unittest.TestCase):
         mock_cls = MagicMock()
 
         with patch.dict(
-            "src.orderbook.order_execution.map_order_type_to_execution",
+            "lob.orderbook.order_execution.map_order_type_to_execution",
             {OrderType.MARKET: mock_cls},
         ):
             execute_order(self.order, self.orderbook)
@@ -658,7 +658,7 @@ class TestExecuteOrder(unittest.TestCase):
         mock_cls = MagicMock()
 
         with patch.dict(
-            "src.orderbook.order_execution.map_order_type_to_execution",
+            "lob.orderbook.order_execution.map_order_type_to_execution",
             {OrderType.LIMIT: mock_cls},
         ):
             execute_order(self.order, self.orderbook)

@@ -1,14 +1,7 @@
 import unittest
-import sys
 
-# TODO
-# fix import system accross package
-# seems like test_order called first, appends src to path then subsequent test modules can test src
-# individual test module will fail import otherwise
-sys.path.append("src")
-
-from src.orders.order import Order, OrderSpec, OrderID
-from src.bookkeeping.custom_types import OrderType, Side, ExecutionRule
+from lob.orders.order import Order, OrderSpec, OrderID
+from lob.bookkeeping.custom_types import OrderType, Side, ExecutionRule
 
 
 class TestOrderConstruction(unittest.TestCase):

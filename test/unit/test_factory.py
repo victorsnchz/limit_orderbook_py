@@ -1,14 +1,14 @@
 import unittest
 
-from src.orders.factory import (
+from lob.orders.factory import (
     OrderFactory,
     LimitOrderFactory,
     MarketOrderFactory,
     map_type_to_factory,
 )
-from src.orders.order import Order
-from src.bookkeeping.custom_types import ExecutionRule, Side, OrderType
-from src.orders.order_id_generator import OrderIdGenerator
+from lob.orders.order import Order
+from lob.bookkeeping.custom_types import ExecutionRule, Side, OrderType
+from lob.orders.order_id_generator import OrderIdGenerator
 
 
 class TestLimitOrderFactory(unittest.TestCase):

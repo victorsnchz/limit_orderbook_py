@@ -3,10 +3,10 @@ from unittest.mock import MagicMock
 import sys
 
 sys.path.append("src")
-from src.orderbook.orders_queue import OrdersQueue
-from src.orders.order import Order, OrderSpec, OrderID
-from src.bookkeeping.custom_types import Side, ExecutionRule, OrderType, LevelState
-from src.bookkeeping.exceptions import (
+from lob.orderbook.orders_queue import OrdersQueue
+from lob.orders.order import Order, OrderSpec, OrderID
+from lob.bookkeeping.custom_types import Side, ExecutionRule, OrderType, LevelState
+from lob.bookkeeping.exceptions import (
     DuplicateOrderError,
     EmptyQueueError,
     OrderNotFoundError,

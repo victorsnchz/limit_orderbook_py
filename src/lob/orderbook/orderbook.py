@@ -3,11 +3,11 @@ Two-sided limit order book with id-indexed O(1) order lookup.
 Owns book state and single-level matching; multi-level routing is the caller's job.
 """
 
-from src.bookkeeping.custom_types import Side
-from src.orderbook.book_side import BidSide, AskSide, BookSide
-from src.bookkeeping.custom_types import FilledPayload, OrderType
-from src.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
-from src.orders.order import Order
+from lob.bookkeeping.custom_types import Side
+from lob.orderbook.book_side import BidSide, AskSide, BookSide
+from lob.bookkeeping.custom_types import FilledPayload, OrderType
+from lob.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
+from lob.orders.order import Order
 
 
 class OrderBook:

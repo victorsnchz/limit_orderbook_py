@@ -1,13 +1,13 @@
 import unittest
-from src.orderbook.orderbook import OrderBook
-from src.orderbook.order_execution import (
+from lob.orderbook.orderbook import OrderBook
+from lob.orderbook.order_execution import (
     LimitOrderExecution,
     MarketOrderExecution,
     execute_order,
 )
-from src.orders.order import Order, OrderID, OrderSpec
-from src.orders.order_id_generator import OrderIdGenerator
-from src.bookkeeping.custom_types import (
+from lob.orders.order import Order, OrderID, OrderSpec
+from lob.orders.order_id_generator import OrderIdGenerator
+from lob.bookkeeping.custom_types import (
     Side,
     OrderType,
     ExecutionRule,

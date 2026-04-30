@@ -1,10 +1,10 @@
 import unittest
-from src.orderbook.orderbook import OrderBook
-from src.orders.order import Order, OrderID, OrderSpec
-from src.bookkeeping.custom_types import Side, OrderType, ExecutionRule, LevelState
-from src.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
-from src.orders.order_id_generator import OrderIdGenerator
-from src.orderbook.book_side import BidSide, AskSide, BookSide
+from lob.orderbook.orderbook import OrderBook
+from lob.orders.order import Order, OrderID, OrderSpec
+from lob.bookkeeping.custom_types import Side, OrderType, ExecutionRule, LevelState
+from lob.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
+from lob.orders.order_id_generator import OrderIdGenerator
+from lob.orderbook.book_side import BidSide, AskSide, BookSide
 
 
 class OrderBookIntegrationBase(unittest.TestCase):

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from src.bookkeeping.custom_types import ExecutionRule, Side, OrderType, OrderSnapshot
+from lob.bookkeeping.custom_types import ExecutionRule, Side, OrderType, OrderSnapshot
 from typing import Optional
 
 

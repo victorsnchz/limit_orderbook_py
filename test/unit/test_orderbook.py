@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import MagicMock, PropertyMock
-from src.orderbook.orderbook import OrderBook
-from src.orders.order import Order, OrderID, OrderSpec, OrderSnapshot
-from src.orders.order_id_generator import OrderIdGenerator
-from src.orderbook.orders_queue import OrdersQueue
-from src.bookkeeping.custom_types import Side, OrderType, FilledPayload
-from src.bookkeeping.exceptions import InvalidOrderError, DuplicateOrderError
-from src.orderbook.book_side import BookSide
-from src.orderbook.orders_queue import OrdersQueue
+from lob.orderbook.orderbook import OrderBook
+from lob.orders.order import Order, OrderID, OrderSpec, OrderSnapshot
+from lob.orders.order_id_generator import OrderIdGenerator
+from lob.orderbook.orders_queue import OrdersQueue
+from lob.bookkeeping.custom_types import Side, OrderType, FilledPayload
+from lob.bookkeeping.exceptions import InvalidOrderError, DuplicateOrderError
+from lob.orderbook.book_side import BookSide
+from lob.orderbook.orders_queue import OrdersQueue
 from dataclasses import replace
 
 

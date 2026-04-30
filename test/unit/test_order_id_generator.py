@@ -2,7 +2,7 @@ import unittest
 import sys
 import threading
 
-from src.orders.order_id_generator import OrderIdGenerator
+from lob.orders.order_id_generator import OrderIdGenerator
 
 
 class TestOrderIdGeneratorInit(unittest.TestCase):

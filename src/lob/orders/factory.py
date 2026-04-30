@@ -1,10 +1,10 @@
 # product = order
 # concrete = limit / market orders
 
-from src.orders.order import Order, OrderID, OrderSpec
+from lob.orders.order import Order, OrderID, OrderSpec
 from abc import ABC, abstractmethod
-from src.bookkeeping.custom_types import OrderType, Side, ExecutionRule
-from src.orders.order_id_generator import OrderIdGenerator
+from lob.bookkeeping.custom_types import OrderType, Side, ExecutionRule
+from lob.orders.order_id_generator import OrderIdGenerator
 
 
 class OrderFactory(ABC):

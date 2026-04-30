@@ -1,5 +1,7 @@
 # limit_orderbook_py
 
+[![tests](https://github.com/victorsnchz/limit_orderbook_py/actions/workflows/test.yml/badge.svg)](https://github.com/victorsnchz/limit_orderbook_py/actions/workflows/test.yml)
+
 A continuous-matching limit order book in Python. Single-process, in-memory,
 price-time priority, integer-tick arithmetic, typed event output. Written as a
 correctness-first reference implementation before a port to C++.
@@ -37,7 +39,7 @@ Test split is bottom-up: each module (`Order`, `OrdersQueue`, `BookSide`, `Order
 ## Run / test
 
 ```bash
-pip install -r requirements.txt           # sortedcontainers, matplotlib
+pip install -e .                          # editable install (sortedcontainers, matplotlib)
 
 python -m unittest discover -s test       # full suite
 ./test_by_module.bash                     # per-module, in dependency order,
@@ -53,7 +55,7 @@ per-side level map.
 ## Architecture
 
 ```
-src/
+src/lob/
 ├── orders/
 │   ├── order.py              # Order, OrderSpec, OrderSnapshot, FilledOrder
 │   ├── factory.py            # type-driven Order construction

@@ -1,11 +1,11 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from src.orderbook.book_side import BookSide, BidSide, AskSide
-from src.orders.order import OrderID, Order, OrderSpec
-from src.bookkeeping.custom_types import OrderType, ExecutionRule, Side
-from src.orderbook.orders_queue import OrdersQueue
-from src.bookkeeping.exceptions import EmptyBookSideError, PriceLevelNotFoundError
+from lob.orderbook.book_side import BookSide, BidSide, AskSide
+from lob.orders.order import OrderID, Order, OrderSpec
+from lob.bookkeeping.custom_types import OrderType, ExecutionRule, Side
+from lob.orderbook.orders_queue import OrdersQueue
+from lob.bookkeeping.exceptions import EmptyBookSideError, PriceLevelNotFoundError
 
 
 # ======================================================================================
@@ -21,7 +21,7 @@ class BookSideTestBase(unittest.TestCase):
         raise NotImplementedError("subclass must return a BookSide instance")
 
     def setUp(self):
-        patcher = patch("src.orderbook.book_side.OrdersQueue")
+        patcher = patch("lob.orderbook.book_side.OrdersQueue")
         self.MockQueueCls = patcher.start()
         self.addCleanup(patcher.stop)
 
