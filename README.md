@@ -12,8 +12,8 @@ Working matching enginer which supports limit and market aggressors,
 FIFO queues at each price level, multi-level walks across the book,
 typed result/event stream from every execution. State transitions and
 execution policy are split along a deliberate boundary (see D6 below). Every
-non-obvious choice is documented in [DECISIONS.md](DECISIONS.md); the next
-work and its rationale live in [ROADMAP.md](ROADMAP.md).
+non-obvious choice is documented in [DECISIONS.md](docs/DECISIONS.md); the next
+work and its rationale live in [ROADMAP.md](docs/ROADMAP.md).
 
 Testing
 unit + integration tests pass
@@ -87,7 +87,7 @@ append-only event log (D11) without API churn.
 ## What's next
 
 In phase order. The full version, with rationale, is in
-[ROADMAP.md](ROADMAP.md). Highlights:
+[ROADMAP.md](docs/ROADMAP.md). Highlights:
 
 **Phase 1 — engine completeness.** `cancel_order` (1.8) and
 `modify_order` (1.9, semantics in D12 — size-down keeps queue priority,
@@ -113,14 +113,14 @@ CI (3.3, 3.4).
 (4.3). With the event log in place, all three are thin.
 
 **Phase 5 — port.** Once the contract is stable and the suite is green,
-the C++/Rust rewrite begins. The `DECISIONS.md` C++/Rust notes are the spec.
+the C++/Rust rewrite begins. The [DECISIONS.md](docs/DECISIONS.md) C++/Rust notes are the spec.
 
 ---
 
 ## Engineering decisions worth surfacing
 
 These are the calls that have actual leverage on the design. Each links
-to its full entry in [DECISIONS.md](DECISIONS.md).
+to its full entry in [DECISIONS.md](docs/DECISIONS.md).
 
 ### State transitions vs. policy (D6)
 
@@ -205,10 +205,11 @@ visible in the test layout (`test/unit/*` per module,
 
 ## Repo conventions
 
-- `DECISIONS.md` — non-obvious or irreversible choices, with rejected
+- [docs/DECISIONS.md](docs/DECISIONS.md) — non-obvious or irreversible choices, with rejected
   alternatives and (where applicable) C++ notes. Living document.
-- `ROADMAP.md` — phased work, gated by an explicit *engine green* bar.
+- [docs/ROADMAP.md](docs/ROADMAP.md) — phased work, gated by an explicit *engine green* bar.
   Tasks reference decision IDs.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — diagram-oriented summary of the engine's structure.
 - Commits are scoped (`feat`, `refactor`, `test`, `chore`); the history
   is meant to be readable.
 
