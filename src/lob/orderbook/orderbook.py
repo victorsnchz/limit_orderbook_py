@@ -146,7 +146,15 @@ class OrderBook:
 
         self._order_index[order.order_id] = (order.side, order.limit_price)
 
-    def cancel_order(self, order_id: int) -> None: ...
+    def cancel_order(self, order_id: int) -> None:
+
+        if order_id not in self:
+            raise InvalidOrderError(f"order {order_id} not found in orderbook")
+
+        side, price = self._order_index[order_id]
+        book_side = self.get_book_side(side)
+        book_side.delete_order(order_id, price)
+        del self._order_index[order_id]
 
     def fill_top(self, order: Order) -> list[FilledPayload]:
         """
