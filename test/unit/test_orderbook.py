@@ -540,7 +540,14 @@ class TestGetOrder(OrderbookBase):
 class TestCancelOrder(OrderbookBase):
     def test_unknown_order_raises(self):
         with self.assertRaises(InvalidOrderError):
-            self.orderbook.get_order(0)
+            self.orderbook.cancel_order(0)
+
+    def test_failure_leaves_state_untouched(self):
+        self.orderbook._order_index[0] = (Side.BID, 99)
+        self.orderbook.bid_side = MagicMock()
+        with self.assertRaises(InvalidOrderError):
+            self.orderbook.cancel_order(1)
+        self.assertIn(0, self.orderbook)
 
     def test_cancels_from_correct_side_and_level(self):
         self.orderbook._order_index[0] = (Side.BID, 99)
