@@ -534,7 +534,31 @@ class TestGetOrder(OrderbookBase):
         self.orderbook._order_index[1] = (Side.ASK, 100)
         self.orderbook.ask_side = MagicMock()
         self.orderbook.get_order(1)
-        self.orderbook.bid_side.assert_not_called()
+        self.assertEqual(self.orderbook.bid_side.method_calls, [])
+
+
+class TestCancelOrder(OrderbookBase):
+    def test_unknown_order_raises(self):
+        with self.assertRaises(InvalidOrderError):
+            self.orderbook.get_order(0)
+
+    def test_cancels_from_correct_side_and_level(self):
+        self.orderbook._order_index[0] = (Side.BID, 99)
+        self.orderbook.bid_side = MagicMock()
+        self.orderbook.cancel_order(0)
+        self.orderbook.bid_side.delete_order.assert_called_once_with(0, 99)
+
+    def test_does_not_touch_opposite_side(self):
+        self.orderbook._order_index[0] = (Side.ASK, 100)
+        self.orderbook.ask_side = MagicMock()
+        self.orderbook.cancel_order(0)
+        self.assertEqual(self.orderbook.bid_side.method_calls, [])
+
+    def test_deletes_from_orderbook(self):
+        self.orderbook._order_index[0] = (Side.BID, 99)
+        self.orderbook.bid_side = MagicMock()
+        self.orderbook.cancel_order(0)
+        self.assertNotIn(0, self.orderbook)
 
 
 def _make_limit_order(
