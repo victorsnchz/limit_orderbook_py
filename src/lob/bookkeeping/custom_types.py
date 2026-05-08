@@ -49,7 +49,8 @@ class EventKind(enum.Enum):
     REJECTED = enum.auto()
     FILLED = enum.auto()
     POSTED = enum.auto()
-    # backlog: CANCELLED, MODIFIED
+    CANCELLED = enum.auto()
+    # backlog: MODIFIED
 
 
 @dataclass(frozen=True)
@@ -74,7 +75,14 @@ class PostedPayload:
     aggressor: OrderSnapshot
 
 
-Payload = AcceptedPayload | FilledPayload | PostedPayload
+@dataclass(frozen=True)
+class CancelledPayload:
+    aggressor: OrderSnapshot
+
+
+Payload = (
+    AcceptedPayload | FilledPayload | PostedPayload | RejectedPayload | CancelledPayload
+)
 
 
 @dataclass(frozen=True)
