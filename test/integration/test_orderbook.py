@@ -281,9 +281,131 @@ class TestPriceTimePriorityStructural(OrderBookIntegrationBase):
         )
 
 
-@unittest.skip("wait until implementation")
-class TestCancel(OrderBookIntegrationBase):
-    def test_cancel_removes_from_book_and_index(self): ...
+class TestCancelOrder(OrderBookIntegrationBase):
+    def test_invalid_raises(self):
+        with self.assertRaises(InvalidOrderError):
+            self.orderbook.cancel_order(0)
+
+    def test_double_cancel_raises(self):
+        resting = _make_limit(self.generator, Side.BID, limit_price=100)
+        self.orderbook.post_order(resting)
+        self.orderbook.cancel_order(resting.order_id)
+        with self.assertRaises(InvalidOrderError):
+            self.orderbook.cancel_order(resting.order_id)
+
+    def test_cancel_removes_from_all_structures(self):
+        resting = _make_limit(self.generator, Side.BID, limit_price=100)
+        self.orderbook.post_order(resting)
+
+        top_level_queue = self.orderbook.get_book_side(resting.side).top_level
+
+        self.orderbook.cancel_order(resting.order_id)
+        self.assertNotIn(resting.order_id, self.orderbook)
+        self.assertNotIn(resting.order_id, self.orderbook._order_index)
+        self.assertNotIn(resting.order_id, top_level_queue)
+
+    def test_cancel_removes_from_book_and_index_multi_orders_in_book(self):
+        resting1 = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting1)
+        resting2 = _make_limit(self.generator, Side.ASK, limit_price=101)
+        self.orderbook.post_order(resting2)
+        resting3 = _make_limit(self.generator, Side.ASK, limit_price=102)
+        self.orderbook.post_order(resting3)
+
+        self.orderbook.cancel_order(resting2.order_id)
+        self.assertNotIn(resting2.order_id, self.orderbook)
+
+    def test_no_other_orders_touched(self):
+
+        def _make_book_side(side: Side) -> list[Order]:
+            mid = 100
+            orders = []
+            for i in range(1, 6):
+                price = mid + i
+                if side == Side.BID:
+                    price = mid - i
+                for _ in range(5):
+                    resting = _make_limit(self.generator, side, limit_price=price)
+                    self.orderbook.post_order(resting)
+                    orders.append(resting)
+            return orders
+
+        orders_in_book = _make_book_side(Side.BID) + _make_book_side(Side.ASK)
+
+        to_cancel = orders_in_book.pop()
+        self.orderbook.cancel_order(to_cancel.order_id)
+
+        for order in orders_in_book:
+            self.assertIn(order.order_id, self.orderbook)
+
+    def test_cancel_does_not_modify_order_untouched(self):
+        resting1 = _make_limit(self.generator, Side.BID, limit_price=100)
+        pre_cancel_snapshot = resting1.snapshot()
+        self.orderbook.post_order(resting1)
+        self.orderbook.cancel_order(resting1.order_id)
+        post_cancel_snapshot = resting1.snapshot()
+        self.assertEqual(pre_cancel_snapshot, post_cancel_snapshot)
+
+    def test_cancel_does_not_modify_order_partial_fill(self):
+        resting1 = _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
+        self.orderbook.post_order(resting1)
+        resting1.fill(50)
+        pre_cancel_snapshot = resting1.snapshot()
+        self.orderbook.cancel_order(resting1.order_id)
+        post_cancel_snapshot = resting1.snapshot()
+        self.assertEqual(pre_cancel_snapshot, post_cancel_snapshot)
+
+    def test_cancel_last_order_removes_level(self):
+        resting1 = _make_limit(self.generator, Side.BID, limit_price=100)
+        self.orderbook.post_order(resting1)
+        self.orderbook.cancel_order(resting1.order_id)
+        self.assertTrue(self.orderbook.bid_side.is_empty)
+
+    def test_cancel_last_order_removes_level_preserves_order(self):
+        resting1 = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting1)
+        resting2 = _make_limit(self.generator, Side.ASK, limit_price=101)
+        self.orderbook.post_order(resting2)
+        resting3 = _make_limit(self.generator, Side.ASK, limit_price=102)
+        self.orderbook.post_order(resting3)
+
+        self.orderbook.cancel_order(resting1.order_id)
+        self.assertEqual(self.orderbook.ask_side.best_price, resting2.limit_price)
+
+    def test_cancel_preserves_order_in_queue(self):
+        ids = []
+        for _ in range(4):
+            resting = _make_limit(self.generator, Side.BID, limit_price=100)
+            self.orderbook.post_order(resting)
+            ids.append(resting.order_id)
+
+        self.orderbook.cancel_order(ids[0])
+        self.assertEqual(
+            self.orderbook.bid_side.top_level.next_order_to_execute.order_id, ids[1]
+        )
+
+    def test_cancel_preserves_order_flush(self):
+        ids = []
+        for _ in range(4):
+            resting = _make_limit(self.generator, Side.BID, limit_price=100)
+            self.orderbook.post_order(resting)
+            ids.append(resting.order_id)
+
+        for id in ids:
+            self.assertEqual(
+                self.orderbook.bid_side.top_level.next_order_to_execute.order_id, id
+            )
+            self.orderbook.cancel_order(id)
+
+    def test_cancel_order_on_bid_and_ask_both_resolve(self):
+        resting_bid = _make_limit(self.generator, Side.BID, limit_price=99)
+        resting_ask = _make_limit(self.generator, Side.ASK, limit_price=100)
+        self.orderbook.post_order(resting_bid)
+        self.orderbook.post_order(resting_ask)
+        self.orderbook.cancel_order(resting_bid.order_id)
+        self.orderbook.cancel_order(resting_ask.order_id)
+        self.assertNotIn(resting_bid.order_id, self.orderbook)
+        self.assertNotIn(resting_ask.order_id, self.orderbook)
 
 
 class TestFillTop(OrderBookIntegrationBase):
