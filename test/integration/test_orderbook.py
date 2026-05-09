@@ -7,6 +7,7 @@ from lob.bookkeeping.custom_types import (
     ExecutionRule,
     LevelState,
     PostedPayload,
+    CancelledPayload,
 )
 from lob.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from lob.orders.order_id_generator import OrderIdGenerator
@@ -363,15 +364,15 @@ class TestCancelOrder(OrderBookIntegrationBase):
         for order in orders_in_book:
             self.assertIn(order.order_id, self.orderbook)
 
-    def test_cancel_does_not_modify_order_untouched(self):
-        resting1 = _make_limit(self.generator, Side.BID, limit_price=100)
-        pre_cancel_snapshot = resting1.snapshot()
-        self.orderbook.post_order(resting1)
-        self.orderbook.cancel_order(resting1.order_id)
-        post_cancel_snapshot = resting1.snapshot()
+    def test_cancel_does_not_modify_order(self):
+        resting = _make_limit(self.generator, Side.BID, limit_price=100)
+        pre_cancel_snapshot = resting.snapshot()
+        self.orderbook.post_order(resting)
+        self.orderbook.cancel_order(resting.order_id)
+        post_cancel_snapshot = resting.snapshot()
         self.assertEqual(pre_cancel_snapshot, post_cancel_snapshot)
 
-    def test_cancel_does_not_modify_order_partial_fill(self):
+    def test_cancel_does_not_modify_order_partially_filled(self):
         resting1 = _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
         self.orderbook.post_order(resting1)
         resting1.fill(50)
@@ -431,6 +432,13 @@ class TestCancelOrder(OrderBookIntegrationBase):
         self.orderbook.cancel_order(resting_ask.order_id)
         self.assertNotIn(resting_bid.order_id, self.orderbook)
         self.assertNotIn(resting_ask.order_id, self.orderbook)
+
+    def test_cancel_returns_correct_cancelled_paylaod(self):
+        resting = _make_limit(self.generator, Side.BID, limit_price=100)
+        target_paylaod = CancelledPayload(resting.snapshot())
+        self.orderbook.post_order(resting)
+        returned_paylaod = self.orderbook.cancel_order(resting.order_id)
+        self.assertEqual(target_paylaod, returned_paylaod)
 
 
 class TestFillTop(OrderBookIntegrationBase):

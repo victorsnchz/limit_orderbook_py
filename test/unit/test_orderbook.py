@@ -4,7 +4,13 @@ from lob.orderbook.orderbook import OrderBook
 from lob.orders.order import Order, OrderID, OrderSpec
 from lob.orders.order_id_generator import OrderIdGenerator
 from lob.orderbook.orders_queue import OrdersQueue
-from lob.bookkeeping.custom_types import Side, OrderType, FilledPayload, PostedPayload
+from lob.bookkeeping.custom_types import (
+    Side,
+    OrderType,
+    FilledPayload,
+    PostedPayload,
+    CancelledPayload,
+)
 from lob.bookkeeping.exceptions import InvalidOrderError, DuplicateOrderError
 from lob.orderbook.book_side import BookSide
 from dataclasses import replace
@@ -578,6 +584,17 @@ class TestCancelOrder(OrderbookBase):
         self.orderbook.bid_side = MagicMock()
         self.orderbook.cancel_order(0)
         self.assertNotIn(0, self.orderbook)
+
+    def test_returns_cancelled_payload(self):
+
+        # cumbersome to test actual payload equality
+        # delegated to integration test
+
+        resting = _make_limit_order(side=Side.BID, limit_price=100)
+        self.orderbook.post_order(resting)
+        returned_payload = self.orderbook.cancel_order(resting.order_id)
+
+        self.assertIsInstance(returned_payload, CancelledPayload)
 
 
 def _make_limit_order(

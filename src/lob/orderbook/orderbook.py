@@ -5,7 +5,12 @@ Owns book state and single-level matching; multi-level routing is the caller's j
 
 from lob.bookkeeping.custom_types import Side
 from lob.orderbook.book_side import BidSide, AskSide, BookSide
-from lob.bookkeeping.custom_types import FilledPayload, OrderType, PostedPayload
+from lob.bookkeeping.custom_types import (
+    FilledPayload,
+    OrderType,
+    PostedPayload,
+    CancelledPayload,
+)
 from lob.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from lob.orders.order import Order
 
@@ -149,15 +154,17 @@ class OrderBook:
 
         return PostedPayload(snapshot)
 
-    def cancel_order(self, order_id: int) -> None:
+    def cancel_order(self, order_id: int) -> CancelledPayload:
 
         if order_id not in self:
             raise InvalidOrderError(f"order {order_id} not found in orderbook")
 
+        snapshot = self.get_order(order_id).snapshot()
         side, price = self._order_index[order_id]
         book_side = self.get_book_side(side)
         book_side.delete_order(order_id, price)
         del self._order_index[order_id]
+        return CancelledPayload(snapshot)
 
     def fill_top(self, order: Order) -> list[FilledPayload]:
         """
