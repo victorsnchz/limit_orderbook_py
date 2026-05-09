@@ -299,9 +299,15 @@ class TestLimitOrderExecutionWalksMultipleLevels(OrderExecutionIntegrationBase):
     """
 
     def test_consumes_levels_in_price_priority(self):
-        resting_far = _make_limit(self.generator, Side.ASK, limit_price=102, quantity=100)
-        resting_mid = _make_limit(self.generator, Side.ASK, limit_price=101, quantity=100)
-        resting_near = _make_limit(self.generator, Side.ASK, limit_price=100, quantity=100)
+        resting_far = _make_limit(
+            self.generator, Side.ASK, limit_price=102, quantity=100
+        )
+        resting_mid = _make_limit(
+            self.generator, Side.ASK, limit_price=101, quantity=100
+        )
+        resting_near = _make_limit(
+            self.generator, Side.ASK, limit_price=100, quantity=100
+        )
         # post in non-priority order to verify price priority drives consumption
         self.orderbook.post_order(resting_far)
         self.orderbook.post_order(resting_mid)
@@ -638,9 +644,15 @@ class TestMarketOrderExecutionWalksMultipleLevels(OrderExecutionIntegrationBase)
         self.assertTrue(self.orderbook.ask_side.is_empty)
 
     def test_filled_payloads_ordered_by_consumption(self):
-        resting_low = _make_limit(self.generator, Side.ASK, limit_price=100, quantity=50)
-        resting_mid = _make_limit(self.generator, Side.ASK, limit_price=200, quantity=50)
-        resting_high = _make_limit(self.generator, Side.ASK, limit_price=300, quantity=50)
+        resting_low = _make_limit(
+            self.generator, Side.ASK, limit_price=100, quantity=50
+        )
+        resting_mid = _make_limit(
+            self.generator, Side.ASK, limit_price=200, quantity=50
+        )
+        resting_high = _make_limit(
+            self.generator, Side.ASK, limit_price=300, quantity=50
+        )
         # post in non-priority order
         self.orderbook.post_order(resting_high)
         self.orderbook.post_order(resting_mid)
@@ -757,8 +769,12 @@ class TestExecuteOrderDispatch(OrderExecutionIntegrationBase):
         self.assertEqual(aggressor.remaining_quantity, 60)
 
     def test_resting_orders_consumed_in_price_time_priority(self):
-        resting_high = _make_limit(self.generator, Side.ASK, limit_price=200, quantity=30)
-        resting_low = _make_limit(self.generator, Side.ASK, limit_price=100, quantity=30)
+        resting_high = _make_limit(
+            self.generator, Side.ASK, limit_price=200, quantity=30
+        )
+        resting_low = _make_limit(
+            self.generator, Side.ASK, limit_price=100, quantity=30
+        )
         self.orderbook.post_order(resting_high)
         self.orderbook.post_order(resting_low)
         aggressor = _make_market(self.generator, Side.BID, quantity=60)
@@ -853,7 +869,9 @@ class TestSuccessiveExecutions(OrderExecutionIntegrationBase):
         )
         self.orderbook.post_order(small_resting)
 
-        aggressor1 = _make_limit(self.generator, Side.BID, limit_price=100, quantity=100)
+        aggressor1 = _make_limit(
+            self.generator, Side.BID, limit_price=100, quantity=100
+        )
         LimitOrderExecution(aggressor1, self.orderbook).execute()
         self.assertIn(aggressor1.order_id, self.orderbook)
         self.assertEqual(aggressor1.remaining_quantity, 60)
@@ -880,7 +898,9 @@ class TestSuccessiveExecutions(OrderExecutionIntegrationBase):
         market_buyer = _make_market(self.generator, Side.BID, quantity=70)
         execute_order(market_buyer, self.orderbook)
 
-        limit_seller = _make_limit(self.generator, Side.ASK, limit_price=98, quantity=50)
+        limit_seller = _make_limit(
+            self.generator, Side.ASK, limit_price=98, quantity=50
+        )
         execute_order(limit_seller, self.orderbook)
 
         self.assertTrue(resting_ask_1.is_filled)
