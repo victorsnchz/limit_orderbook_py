@@ -282,6 +282,15 @@ class TestLimitOrderExecutionNoCross(OrderExecutionIntegrationBase):
 
         self.assertEqual(result.report.status, FillStatus.UNFILLED)
 
+    def test_no_filled_event_when_no_cross(self):
+        resting = _make_limit(self.generator, Side.ASK, limit_price=100, quantity=200)
+        self.orderbook.post_order(resting)
+        aggressor = _make_limit(self.generator, Side.BID, limit_price=99, quantity=100)
+
+        result = LimitOrderExecution(aggressor, self.orderbook).execute()
+
+        self.assertFalse(any(e.kind == EventKind.FILLED for e in result.events))
+
 
 class TestLimitOrderExecutionWalksMultipleLevels(OrderExecutionIntegrationBase):
     """
