@@ -100,10 +100,9 @@ class OrderExecution(ABC):
         kind = EventKind.ACCEPTED
         self._events.append(Event(kind=kind, payload=payload))
 
-    def _record_posted(self) -> None:
-        payload = PostedPayload(self.order.snapshot())
+    def _record_posted(self, posted_payload: PostedPayload) -> None:
         kind = EventKind.POSTED
-        self._events.append(Event(kind=kind, payload=payload))
+        self._events.append(Event(kind=kind, payload=posted_payload))
         self._posted = True
 
     def _compute_status(self) -> FillStatus:
@@ -147,9 +146,9 @@ class LimitOrderExecution(OrderExecution):
 
         self._match()
         if not self.order.is_filled:
-            self.orderbook.post_order(self.order)
+            posted_payload = self.orderbook.post_order(self.order)
 
-            self._record_posted()
+            self._record_posted(posted_payload)
 
     def _validate_type_specific(self) -> AcceptedPayload | RejectedPayload:
         """

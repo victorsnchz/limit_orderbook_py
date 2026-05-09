@@ -306,16 +306,18 @@ class TestRecordPosted(OrderExecutionBase):
         return executor
 
     def test_appends_single_event(self):
-        executor = self._make_executor(_make_snapshot())
+        snapshot = _make_snapshot()
+        executor = self._make_executor(snapshot)
 
-        executor._record_posted()
+        executor._record_posted(PostedPayload(snapshot))
 
         self.assertEqual(len(executor._events), 1)
 
     def test_event_kind_is_posted(self):
-        executor = self._make_executor(_make_snapshot())
+        snapshot = _make_snapshot()
+        executor = self._make_executor(snapshot)
 
-        executor._record_posted()
+        executor._record_posted(PostedPayload(snapshot))
 
         self.assertEqual(executor._events[0].kind, EventKind.POSTED)
 
@@ -323,14 +325,15 @@ class TestRecordPosted(OrderExecutionBase):
         snapshot = _make_snapshot()
         executor = self._make_executor(snapshot)
 
-        executor._record_posted()
+        executor._record_posted(PostedPayload(snapshot))
 
         self.assertEqual(executor._events[0].payload, PostedPayload(snapshot))
 
     def test_sets_posted_flag_true(self):
-        executor = self._make_executor(_make_snapshot())
+        snapshot = _make_snapshot()
+        executor = self._make_executor(snapshot)
 
-        executor._record_posted()
+        executor._record_posted(PostedPayload(snapshot))
 
         self.assertTrue(executor._posted)
 

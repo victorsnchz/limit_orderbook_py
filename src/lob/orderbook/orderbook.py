@@ -5,7 +5,7 @@ Owns book state and single-level matching; multi-level routing is the caller's j
 
 from lob.bookkeeping.custom_types import Side
 from lob.orderbook.book_side import BidSide, AskSide, BookSide
-from lob.bookkeeping.custom_types import FilledPayload, OrderType
+from lob.bookkeeping.custom_types import FilledPayload, OrderType, PostedPayload
 from lob.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from lob.orders.order import Order
 
@@ -113,7 +113,7 @@ class OrderBook:
     def __contains__(self, order_id: int) -> bool:
         return order_id in self._order_index
 
-    def post_order(self, order: Order) -> None:
+    def post_order(self, order: Order) -> PostedPayload:
         """
         Admit a non-crossing LIMIT `order` to its side and index it by id.
         Raises on non-LIMIT type, duplicate id, filled order, or a price that
@@ -141,10 +141,13 @@ class OrderBook:
                 order.side == Side.ASK and order.limit_price <= opposite_side.best_price
             ):
                 raise InvalidOrderError("post expects non-crossing orders only")
+        snapshot = order.snapshot()
 
         self.get_book_side(order.side).post_order(order)
 
         self._order_index[order.order_id] = (order.side, order.limit_price)
+
+        return PostedPayload(snapshot)
 
     def cancel_order(self, order_id: int) -> None:
 

@@ -1,13 +1,12 @@
 import unittest
 from unittest.mock import MagicMock, PropertyMock
 from lob.orderbook.orderbook import OrderBook
-from lob.orders.order import Order, OrderID, OrderSpec, OrderSnapshot
+from lob.orders.order import Order, OrderID, OrderSpec
 from lob.orders.order_id_generator import OrderIdGenerator
 from lob.orderbook.orders_queue import OrdersQueue
-from lob.bookkeeping.custom_types import Side, OrderType, FilledPayload
+from lob.bookkeeping.custom_types import Side, OrderType, FilledPayload, PostedPayload
 from lob.bookkeeping.exceptions import InvalidOrderError, DuplicateOrderError
 from lob.orderbook.book_side import BookSide
-from lob.orderbook.orders_queue import OrdersQueue
 from dataclasses import replace
 
 
@@ -113,6 +112,19 @@ class TestPostOrder(OrderbookBase):
 
         with self.assertRaises(InvalidOrderError):
             self.orderbook.post_order(order)
+
+    def test_post_order_returns_posted_payload_right_fields(self):
+        order = _make_limit_order(side=Side.ASK, limit_price=99)
+        payload = PostedPayload(order.snapshot())
+        returned_payload = self.orderbook.post_order(order)
+        self.assertEqual(returned_payload, payload)
+
+    def test_posted_payload_decoupled_from_order(self):
+        order = _make_limit_order(side=Side.ASK, limit_price=99, quantity=100)
+        payload = PostedPayload(order.snapshot())
+        returned_payload = self.orderbook.post_order(order)
+        order.fill(50)
+        self.assertEqual(returned_payload, payload)
 
 
 class TestOrderbookInvariants(OrderbookBase):
@@ -422,8 +434,8 @@ class TestFillTop(OrderbookBase):
             )
         returned_payloads = self.orderbook.fill_top(aggressor)
 
-        for target_payload, returned_paylaod in zip(target_payloads, returned_payloads):
-            self.assertEqual(target_payload, returned_paylaod)
+        for target_payload, returned_payload in zip(target_payloads, returned_payloads):
+            self.assertEqual(target_payload, returned_payload)
 
     # book-state invariants (D9)
     def test_fill_top_removes_fully_filled_resting_from_index(self):

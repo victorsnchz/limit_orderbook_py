@@ -1,7 +1,13 @@
 import unittest
 from lob.orderbook.orderbook import OrderBook
 from lob.orders.order import Order, OrderID, OrderSpec
-from lob.bookkeeping.custom_types import Side, OrderType, ExecutionRule, LevelState
+from lob.bookkeeping.custom_types import (
+    Side,
+    OrderType,
+    ExecutionRule,
+    LevelState,
+    PostedPayload,
+)
 from lob.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
 from lob.orders.order_id_generator import OrderIdGenerator
 from lob.orderbook.book_side import BidSide, AskSide, BookSide
@@ -13,7 +19,7 @@ class OrderBookIntegrationBase(unittest.TestCase):
         self.generator = OrderIdGenerator()
 
 
-class TestPosting(OrderBookIntegrationBase):
+class TestPostOrder(OrderBookIntegrationBase):
     def test_post_single_bid_creates_level(self):
         resting_order = _make_limit(self.generator, Side.BID, limit_price=99)
         self.assertTrue(self.orderbook.get_book_side(Side.BID).is_empty)
@@ -84,6 +90,25 @@ class TestPosting(OrderBookIntegrationBase):
             (resting.side, resting.limit_price),
             self.orderbook._order_index[resting.order_id],
         )
+
+    def test_post_returns_right_payload_field_by_field(self):
+        resting = _make_limit(self.generator, Side.BID, limit_price=100)
+        target_payload = PostedPayload(resting.snapshot())
+        returned_payload = self.orderbook.post_order(resting)
+        self.assertEqual(target_payload, returned_payload)
+
+    def test_returned_payload_not_changed_when_order_filled(self):
+        resting = _make_limit(self.generator, Side.BID, quantity=100, limit_price=100)
+        target_payload = PostedPayload(resting.snapshot())
+        returned_payload = self.orderbook.post_order(resting)
+        resting.fill(50)
+        self.assertEqual(target_payload, returned_payload)
+
+    def test_posted_payload_agrees_stored_order(self):
+        resting = _make_limit(self.generator, Side.BID, limit_price=100)
+        returned_payload = self.orderbook.post_order(resting)
+        order_in_book = self.orderbook.get_order(resting.order_id)
+        self.assertEqual(order_in_book.snapshot(), returned_payload.aggressor)
 
 
 class TestGetOrder(OrderBookIntegrationBase):
