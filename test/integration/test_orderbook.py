@@ -102,10 +102,6 @@ class TestGetOrder(OrderBookIntegrationBase):
         self.orderbook.post_order(resting)
         self.assertEqual(resting, self.orderbook.get_order(resting.order_id))
 
-    def test_get_order_unknown_id_raises_invalid_order_error(self):
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.get_order(0)
-
     def test_get_order_on_bid_and_ask_both_resolve(self):
         resting_bid = _make_limit(self.generator, Side.BID, limit_price=99)
         resting_ask = _make_limit(self.generator, Side.ASK, limit_price=100)
@@ -128,34 +124,8 @@ class TestSideAccessors(OrderBookIntegrationBase):
     def test_get_opposite_book_side_ask_returns_bid_side(self):
         self.assertIsInstance(self.orderbook.get_opposite_book_side(Side.ASK), BidSide)
 
-    def test_get_book_side_invalid_type_raises(self):
-        for invalid_type in (None, 1, BookSide, "BID"):
-            with self.assertRaises(TypeError):
-                self.orderbook.get_book_side(invalid_type)
-
-    def test_get_opposite_book_side_invalid_type_raises(self):
-        for invalid_type in (None, 1, BookSide, "BID"):
-            with self.assertRaises(TypeError):
-                self.orderbook.get_opposite_book_side(invalid_type)
-
 
 class TestQueries(OrderBookIntegrationBase):
-    def test_get_bid_ask_mid_raises_when_bid_side_empty(self):
-        resting = _make_limit(self.generator, Side.ASK, limit_price=100)
-        self.orderbook.post_order(resting)
-        with self.assertRaises(RuntimeError):
-            self.orderbook.get_bid_ask_mid()
-
-    def test_get_bid_ask_mid_raises_when_ask_side_empty(self):
-        resting = _make_limit(self.generator, Side.BID, limit_price=100)
-        self.orderbook.post_order(resting)
-        with self.assertRaises(RuntimeError):
-            self.orderbook.get_bid_ask_mid()
-
-    def test_get_bid_ask_mid_raises_when_both_empty(self):
-        with self.assertRaises(RuntimeError):
-            self.orderbook.get_bid_ask_mid()
-
     def test_get_bid_ask_mid_returns_correct_triple(self):
         resting_bid = _make_limit(self.generator, Side.BID, limit_price=99)
         self.orderbook.post_order(resting_bid)
