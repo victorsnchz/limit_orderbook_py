@@ -118,6 +118,43 @@ class OrderBook:
     def __contains__(self, order_id: int) -> bool:
         return order_id in self._order_index
 
+    def _assert_postable(self, order: Order) -> None:
+
+        # preconditions are invariant
+        # enforce guardrail checks
+
+        assert order.order_type is OrderType.LIMIT, (
+            f"cannot post to book an order of type {order.order_type}"
+        )
+
+        assert order.order_id not in self, (
+            f"order {order.order_id} already exists in book"
+        )
+
+        assert not order.is_filled, (
+            f"order {order.order_id} is filled, cannot post to book"
+        )
+
+        assert order.remaining_quantity > 0, (
+            f"order {order.order_id} has <= 0 quantity, cannot post to book"
+        )
+        assert order.limit_price is not None, (
+            f"order {order.order_id} has no price, cannot post to book"
+        )
+
+        assert order.limit_price > 0, (
+            f"order {order.order_id} has negative price, cannot post to book"
+        )
+
+        opposite_side = self.get_opposite_book_side(order.side)
+        if not opposite_side.is_empty:
+            crosses = (
+                order.side == Side.BID and order.limit_price >= opposite_side.best_price
+            ) or (
+                order.side == Side.ASK and order.limit_price <= opposite_side.best_price
+            )
+            assert not crosses, f"post expects non-crossing orders only"
+
     def post_order(self, order: Order) -> PostedPayload:
         """
         Admit a non-crossing LIMIT `order` to its side and index it by id.
@@ -125,27 +162,8 @@ class OrderBook:
         would cross the opposite top.
         """
 
-        if order.order_type is not OrderType.LIMIT:
-            raise InvalidOrderError(
-                f"cannot post to book an order of type {order.order_type}"
-            )
+        self._assert_postable(order)
 
-        if order.order_id in self:
-            raise DuplicateOrderError(f"order {order.order_id} already exists in book")
-
-        if order.is_filled:
-            raise InvalidOrderError(
-                f"order {order.order_id} is filled, cannot post to book"
-            )
-
-        opposite_side = self.get_opposite_book_side(order.side)
-        if not opposite_side.is_empty:
-            if (
-                order.side == Side.BID and order.limit_price >= opposite_side.best_price
-            ) or (
-                order.side == Side.ASK and order.limit_price <= opposite_side.best_price
-            ):
-                raise InvalidOrderError("post expects non-crossing orders only")
         snapshot = order.snapshot()
 
         self.get_book_side(order.side).post_order(order)
@@ -156,8 +174,7 @@ class OrderBook:
 
     def cancel_order(self, order_id: int) -> CancelledPayload:
 
-        if order_id not in self:
-            raise InvalidOrderError(f"order {order_id} not found in orderbook")
+        assert order_id in self, f"order {order_id} not found in orderbook"
 
         snapshot = self.get_order(order_id).snapshot()
         side, price = self._order_index[order_id]

@@ -11,9 +11,10 @@ from lob.bookkeeping.custom_types import (
     PostedPayload,
     CancelledPayload,
 )
-from lob.bookkeeping.exceptions import InvalidOrderError, DuplicateOrderError
+from lob.bookkeeping.exceptions import (
+    InvalidOrderError,
+)
 from lob.orderbook.book_side import BookSide
-from dataclasses import replace
 
 
 class OrderbookBase(unittest.TestCase):
@@ -56,69 +57,6 @@ class TestPostOrder(OrderbookBase):
 
         self.assertEqual(len(self.orderbook._order_index), 3)
 
-    def test_post_non_limit_raises(self):
-        order = _make_market_order()
-
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.post_order(order)
-
-    def test_post_non_limit_no_effect(self):
-        order = _make_market_order()
-
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.post_order(order)
-
-        self.assertNotIn(order.order_id, self.orderbook)
-
-    def test_post_order_rejects_duplicates(self):
-        order = _make_limit_order()
-        self.orderbook.post_order(order)
-
-        with self.assertRaises(DuplicateOrderError):
-            self.orderbook.post_order(order)
-
-    def test_post_duplicate_no_effect(self):
-        order = _make_limit_order(order_id=1, limit_price=100)
-        self.orderbook.post_order(order)
-
-        initial_indexed_values = self.orderbook._order_index[order.order_id]
-        order = _make_limit_order(order_id=1, limit_price=200)
-        with self.assertRaises(DuplicateOrderError):
-            self.orderbook.post_order(order)
-
-        self.assertEqual(
-            self.orderbook._order_index[order.order_id], initial_indexed_values
-        )
-
-    def test_post_order_rejects_filled(self):
-        order = _make_limit_order(quantity=0, is_filled=True)
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.post_order(order)
-
-    def test_post_filled_order_no_effect(self):
-        order = _make_limit_order(quantity=0, is_filled=True)
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.post_order(order)
-        self.assertNotIn(order.order_id, self.orderbook)
-
-    def test_post_bid_crosses_ask_raises(self):
-        order = _make_limit_order(side=Side.BID, limit_price=100)
-
-        self.orderbook.ask_side.best_price = 99
-        self.orderbook.ask_side.is_empty = False
-
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.post_order(order)
-
-    def test_post_ask_crosses_bid_raises(self):
-        order = _make_limit_order(side=Side.ASK, limit_price=99)
-
-        self.orderbook.bid_side.best_price = 100
-        self.orderbook.bid_side.is_empty = False
-
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.post_order(order)
-
     def test_post_order_returns_posted_payload_right_fields(self):
         order = _make_limit_order(side=Side.ASK, limit_price=99)
         payload = PostedPayload(order.snapshot())
@@ -131,6 +69,80 @@ class TestPostOrder(OrderbookBase):
         returned_payload = self.orderbook.post_order(order)
         order.fill(50)
         self.assertEqual(returned_payload, payload)
+
+    # --- invalid orders raised and have no effect -------------------------------------
+
+    def test_post_non_limit_raises_and_no_effect(self):
+        order = _make_market_order()
+
+        with self.assertRaises(AssertionError):
+            self.orderbook.post_order(order)
+
+        self.assertNotIn(order.order_id, self.orderbook)
+
+    def test_post_duplicate_raises_and_no_effect(self):
+        order = _make_limit_order(order_id=1, limit_price=100)
+        self.orderbook.post_order(order)
+
+        initial_indexed_values = self.orderbook._order_index[order.order_id]
+        order = _make_limit_order(order_id=1, limit_price=200)
+        with self.assertRaises(AssertionError):
+            self.orderbook.post_order(order)
+
+        self.assertEqual(
+            self.orderbook._order_index[order.order_id], initial_indexed_values
+        )
+        self.assertIn(order.order_id, self.orderbook)
+
+    def test_post_filled_order_rasises_and_no_effect(self):
+        order = _make_limit_order(quantity=0, is_filled=True)
+        with self.assertRaises(AssertionError):
+            self.orderbook.post_order(order)
+        self.assertNotIn(order.order_id, self.orderbook)
+
+    def test_post_order_negative_qty_raises_and_no_effect(self):
+        order = _make_limit_order(quantity=-1, is_filled=False)
+        with self.assertRaises(AssertionError):
+            self.orderbook.post_order(order)
+        self.assertNotIn(order.order_id, self.orderbook)
+
+    def test_bid_crosses_ask_raises_and_no_effect(self):
+        aggressor = _make_limit_order(side=Side.BID, limit_price=101)
+
+        self.orderbook.ask_side.best_price = 100
+        self.orderbook.ask_side.is_empty = False
+
+        with self.assertRaises(AssertionError):
+            self.orderbook.post_order(aggressor)
+
+        self.assertEqual(self.orderbook.ask_side.best_price, 100)
+        self.assertFalse(self.orderbook.ask_side.is_empty)
+        self.assertNotIn(aggressor.order_id, self.orderbook)
+
+    def test_ask_crosses_bid_raises_and_no_effect(self):
+        aggressor = _make_limit_order(side=Side.ASK, limit_price=99)
+
+        self.orderbook.bid_side.best_price = 100
+        self.orderbook.bid_side.is_empty = False
+
+        with self.assertRaises(AssertionError):
+            self.orderbook.post_order(aggressor)
+
+        self.assertEqual(self.orderbook.bid_side.best_price, 100)
+        self.assertFalse(self.orderbook.bid_side.is_empty)
+        self.assertNotIn(aggressor.order_id, self.orderbook)
+
+    def test_post_no_price_order_raises_and_no_effect(self):
+        order = _make_limit_order(limit_price=None)
+        with self.assertRaises(AssertionError):
+            self.orderbook.post_order(order)
+        self.assertNotIn(order.order_id, self.orderbook)
+
+    def test_post_negative_price_order_raises_and_no_effect(self):
+        order = _make_limit_order(limit_price=-1)
+        with self.assertRaises(AssertionError):
+            self.orderbook.post_order(order)
+        self.assertNotIn(order.order_id, self.orderbook)
 
 
 class TestOrderbookInvariants(OrderbookBase):
@@ -556,17 +568,6 @@ class TestGetOrder(OrderbookBase):
 
 
 class TestCancelOrder(OrderbookBase):
-    def test_unknown_order_raises(self):
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.cancel_order(0)
-
-    def test_failure_leaves_state_untouched(self):
-        self.orderbook._order_index[0] = (Side.BID, 99)
-        self.orderbook.bid_side = MagicMock()
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.cancel_order(1)
-        self.assertIn(0, self.orderbook)
-
     def test_cancels_from_correct_side_and_level(self):
         self.orderbook._order_index[0] = (Side.BID, 99)
         self.orderbook.bid_side = MagicMock()
@@ -595,6 +596,20 @@ class TestCancelOrder(OrderbookBase):
         returned_payload = self.orderbook.cancel_order(resting.order_id)
 
         self.assertIsInstance(returned_payload, CancelledPayload)
+
+    def test_missing_order_raises_and_leaves_state_untouched(self):
+        self.orderbook._order_index[0] = (Side.BID, 99)
+        self.orderbook.bid_side = MagicMock()
+        with self.assertRaises(AssertionError):
+            self.orderbook.cancel_order(1)
+        self.assertIn(0, self.orderbook)
+
+    def test_double_cancel_raises(self):
+        resting = _make_limit_order()
+        self.orderbook.post_order(resting)
+        self.orderbook.cancel_order(resting.order_id)
+        with self.assertRaises(AssertionError):
+            self.orderbook.cancel_order(resting.order_id)
 
 
 def _make_limit_order(

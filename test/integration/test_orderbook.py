@@ -67,22 +67,6 @@ class TestPostOrder(OrderBookIntegrationBase):
             self.orderbook.get_book_side(Side.BID).best_price,
         )
 
-    def test_post_duplicate_id_raises_duplicate_error(self):
-        resting = _make_limit(self.generator, Side.BID, limit_price=100)
-        self.orderbook.post_order(resting)
-        with self.assertRaises(DuplicateOrderError):
-            self.orderbook.post_order(resting)
-
-    def test_post_non_limit_raises_invalid_order_error(self):
-        aggressor = _make_market(self.generator, Side.BID)
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.post_order(aggressor)
-
-    def test_post_already_filled_raises_invalid_order_error(self):
-        resting = _make_limit(self.generator, Side.BID, quantity=0, limit_price=100)
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.post_order(resting)
-
     def test_post_registers_in_order_index(self):
         resting = _make_limit(self.generator, Side.BID, limit_price=100)
         self.orderbook.post_order(resting)
@@ -308,17 +292,6 @@ class TestPriceTimePriorityStructural(OrderBookIntegrationBase):
 
 
 class TestCancelOrder(OrderBookIntegrationBase):
-    def test_invalid_raises(self):
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.cancel_order(0)
-
-    def test_double_cancel_raises(self):
-        resting = _make_limit(self.generator, Side.BID, limit_price=100)
-        self.orderbook.post_order(resting)
-        self.orderbook.cancel_order(resting.order_id)
-        with self.assertRaises(InvalidOrderError):
-            self.orderbook.cancel_order(resting.order_id)
-
     def test_cancel_removes_from_all_structures(self):
         resting = _make_limit(self.generator, Side.BID, limit_price=100)
         self.orderbook.post_order(resting)

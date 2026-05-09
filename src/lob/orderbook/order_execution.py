@@ -12,7 +12,6 @@ from lob.bookkeeping.custom_types import (
     EventKind,
     ExecutionReport,
 )
-
 from abc import ABC, abstractmethod
 
 
@@ -43,6 +42,7 @@ class OrderExecution(ABC):
             return RejectedPayload(self.order.snapshot(), "non-positive quantity")
         if self.order.is_filled:
             return RejectedPayload(self.order.snapshot(), "order already filled")
+
         return self._validate_type_specific()
 
     @abstractmethod
@@ -142,6 +142,10 @@ class LimitOrderExecution(OrderExecution):
     Match against the opposite side, then post any residual to the book.
     """
 
+    def __init__(self, order: Order, orderbook):
+        assert order.order_type is OrderType.LIMIT
+        super().__init__(order, orderbook)
+
     def _do_execute(self) -> None:
 
         self._match()
@@ -160,7 +164,6 @@ class LimitOrderExecution(OrderExecution):
             )
         if self.order.limit_price <= 0:
             return RejectedPayload(self.order.snapshot(), "non-positive limit price")
-        # backlog - check type?
         return AcceptedPayload(self.order.snapshot())
 
 
@@ -168,6 +171,10 @@ class MarketOrderExecution(OrderExecution):
     """
     Match against the opposite side; never posts residual.
     """
+
+    def __init__(self, order: Order, orderbook):
+        assert order.order_type is OrderType.MARKET
+        super().__init__(order, orderbook)
 
     def _do_execute(self) -> None:
         self._match()

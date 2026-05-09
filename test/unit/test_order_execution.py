@@ -29,6 +29,7 @@ class OrderExecutionBase(unittest.TestCase):
 
     def setUp(self):
         self.order = MagicMock(spec=Order)
+        self.order.order_type = OrderType.LIMIT
         self.opposite_side = MagicMock(spec=BookSide)
         self.orderbook = MagicMock(spec=OrderBook)
         self.orderbook.get_opposite_book_side.return_value = self.opposite_side
@@ -467,6 +468,16 @@ class LimitOrderExecutionBase(OrderExecutionBase):
         self.order.order_type = OrderType.LIMIT
 
 
+class TestLimitOrderExecutionInstantiation(LimitOrderExecutionBase):
+    def test_instantiation_success_valid_arguments(self):
+        LimitOrderExecution(self.order, self.orderbook)
+
+    def test_limit_executor_rejects_non_limit_orders(self):
+        market_order = _make_market_order()
+        with self.assertRaises(AssertionError):
+            LimitOrderExecution(market_order, self.orderbook)
+
+
 class TestLimitOrderExecutionDoExecute(LimitOrderExecutionBase):
     """
     LimitOrderExecution._do_execute: matches first, then posts the residual if
@@ -545,6 +556,16 @@ class MarketOrderExecutionBase(OrderExecutionBase):
     def setUp(self):
         super().setUp()
         self.order.order_type = OrderType.MARKET
+
+
+class TestMarketOrderExecutionInstantiation(MarketOrderExecutionBase):
+    def test_instantiation_success_valid_arguments(self):
+        MarketOrderExecution(self.order, self.orderbook)
+
+    def test_market_executor_rejects_non_limit_orders(self):
+        limit_order = _make_limit_order()
+        with self.assertRaises(AssertionError):
+            MarketOrderExecution(limit_order, self.orderbook)
 
 
 class TestMarketOrderExecutionDoExecute(MarketOrderExecutionBase):
