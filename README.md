@@ -91,17 +91,18 @@ append-only event log (D11) without API churn.
 In phase order. The full version, with rationale, is in
 [ROADMAP.md](docs/ROADMAP.md). Highlights:
 
-**Phase 1 — engine completeness.** `cancel_order` (1.8) and
+**Phase 1 — engine completeness.** The executor layer over the shipped
+`cancel_order` / `modify_order` primitives: `CancelOrderExecution` (1.8a)
+turns cancel requests into `ACCEPTED | REJECTED | CANCELLED` events, and
 `modify_order` (1.9, semantics in D12 — size-down keeps queue priority,
 everything else is cancel-and-repost; crossing modifies route through the
-matcher and return the same `ExecutionReport` an aggressor would).
+matcher and surface as `FILLED` events, like any aggressor (D13)).
 `assert_book_consistent()` as an integration-only invariant probe (1.7).
-CI on every push (1.4).
 
 **Phase 2 — observability.** Append-only event log with monotone sequence
-numbers (D11, 2.3): every state transition is one event, the historical
-`Saver` becomes a derived reader (1.13/2.4 already moved to "decommission
-and rebuild" rather than refactor). This is the same model real exchanges
+numbers (D11, 2.3): every state transition is one event. The snapshot
+`Saver` was decommissioned, not migrated — its replacement reader is a
+fresh projection over the log. This is the same model real exchanges
 publish (ITCH/FIX) and the substrate for replayable backtests.
 Structured logging at engine boundaries (2.5).
 
@@ -159,10 +160,11 @@ priority. Anything else — price change, size up, side flip — is
 cancel-and-repost and loses priority. This is what Nasdaq, NYSE, LSE,
 and CME implement; the fairness rule is *you cannot improve queue
 position without paying for it with a fresh timestamp*. Crossing
-modifies are mechanically `cancel_order` followed by `execute_order` on
-the new aggressor and return the same `ExecutionReport` as any other
-aggressor — no separate code path, no separate return type, matching
-how real venues handle it.
+modifies are mechanically `cancel_order` followed by routing the
+replacement through the matcher, like any other aggressor — no separate
+code path, no separate return type. The book's `modify_order` returns a
+`ModifiedPayload` (D13); a `ModifyOrderExecution` composes the
+`ExecutionReport`, matching how real venues handle it.
 
 ### Execution output is a typed contract (D10)
 
@@ -172,6 +174,16 @@ how real venues handle it.
 (`ACCEPTED | REJECTED | FILLED | POSTED`). One channel for fills, not
 two, so the same stream is what the event log (D11) will append. Cheap
 callers read `report.status`; replay-driven callers consume `events`.
+
+### Symmetric returns: one payload per transition (D13)
+
+Every `OrderBook` mutation returns a typed payload — `post_order →
+PostedPayload`, `cancel_order → CancelledPayload`, `modify_order →
+ModifiedPayload`, `fill_top → list[FilledPayload]`. The book reports what
+each transition did; the executor composes those payloads into the
+`Event` stream and `ExecutionResult` (D10). No primitive returns `None`
+and none builds a policy summary — each layer's return type matches its
+job, and the event log (D11) appends a uniform stream.
 
 ### Frozen dataclasses for evolving objects
 
