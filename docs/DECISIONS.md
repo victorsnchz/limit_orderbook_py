@@ -127,7 +127,8 @@ state and must preserve its invariants — `post_order`, `cancel_order`,
 `modify_order`, and `fill_top` (consume the opposite top-of-book against
 an aggressor until one side is exhausted, removing depleted orders and
 empty levels as it goes). These methods own the index (D9) and the
-queue-and-level cleanup in a single place.
+queue-and-level cleanup in a single place, and each returns a typed
+payload describing the transition it performed (D13).
 
 **Policy (OrderExecution):** when to call the transitions, against what,
 and how many times. `LimitOrderExecution` loops `fill_top` while the
@@ -253,10 +254,11 @@ they're O(1) lookup + O(1) removal from the queue.
 must move together:
 - `post_order` → add to both.
 - `cancel_order` → remove from both.
-- `fill_top` → when a resting order clears, remove from both. *(Pending —
-  currently only removed from the queue, leaving the index to drift.)*
+- `fill_top` → when a resting order clears, remove from both (current —
+  `orderbook.py` does `del self._order_index[...]` as each resting order
+  fills).
 
-**Public memberhsip API** Orderbook.__contains__(order_id: int). Index is consulted
+**Public membership API** OrderBook.__contains__(order_id: int). Index is consulted
 often enough (in-book internal logic and in-tests) that exposing membership through
 dunder justified. Mirrors OrdersQueue.__contains__ shape from D8,
 Encapsulated index lookup so internal mapping changes don't ripple through caller.
@@ -306,6 +308,12 @@ class ExecutionResult:
 as `FILLED` events carrying `FilledPayload`. Single channel, no
 duplication; the same stream is what D11 will append-log.
 
+**Composed from payloads (D13):** every `Event` here wraps a
+per-transition payload produced by the book — `FILLED`/`FilledPayload`,
+`POSTED`/`PostedPayload`, `CANCELLED`/`CancelledPayload`,
+`MODIFIED`/`ModifiedPayload`. The executor assembles the stream and the
+summary; it never invents fill data.
+
 **Consequences:** unblocks structured logging, agent feedback loops, and
 the event log (D11).
 
@@ -315,10 +323,13 @@ the event log (D11).
 
 **Status:** pending (roadmap phase 2).
 
-**Decision:** replace the snapshot-based `Saver` with an append-only event
-log carrying monotonically increasing sequence numbers. Every state
-transition (accept, fill, cancel, modify, reject) becomes one event. The
-current `Saver` becomes a derived view over the log.
+**Decision:** the source of truth is an append-only event log carrying
+monotonically increasing sequence numbers. Every state transition
+(accept, fill, cancel, modify, reject) becomes one event, wrapping that
+transition's payload (D13). Persistence and query are projections derived
+from the log; there is no separate snapshot writer. The earlier
+snapshot-based `Saver` was decommissioned rather than migrated — replaying
+the log subsumes it.
 
 **Rationale:**
 - Snapshots lose the causal chain. The log keeps it.
@@ -327,7 +338,8 @@ current `Saver` becomes a derived view over the log.
 - Matches how real exchanges publish market data (ITCH, FIX).
 
 **Consequences:**
-- Saver no longer the primary persistence layer — reader, not writer.
+- No snapshot writer; any reader/projection (depth view, export, replay)
+  is built fresh over the log.
 - Integration tests become event-stream diffs, which are more precise
   than directory-of-CSV comparison.
 
@@ -350,22 +362,91 @@ it with a fresh timestamp. Size-down is harmless and preserves priority.
 **Rejected alternative:** always cancel-and-repost. Simpler to implement,
 but penalises benign size reductions and diverges from every major venue.
 
-**Crossing modifies:** mechanically identical to `cancel_order` followed
-by `execute_order` on the new aggressor. No dedicated code path, no
-separate return type — the modify API returns the same `ExecutionReport`
-(D10) as any aggressor would. Real venues treat this the same way; most
-don't even have a distinct "modify-crosses" message type.
+**Layering (D6 + D13):**
+- `OrderBook.modify_order` is the *transition* primitive — the in-place
+  size-down that mutates `remaining_quantity` while keeping queue
+  position, and returns `ModifiedPayload(original_order, modified_order)`
+  (D13). It performs one mutation; it does not orchestrate.
+- A `ModifyOrderExecution` strategy (*policy*, sibling of the planned
+  `CancelOrderExecution`) decides size-down-in-place vs cancel-and-repost,
+  performs the latter by composing `cancel_order` + `post_order` / match,
+  and returns `ExecutionResult` / `ExecutionReport` (D10) like any other
+  execution. The book primitive never returns an `ExecutionReport`.
+
+**Crossing modifies:** a cancel-and-repost whose replacement crosses is
+mechanically `cancel_order` followed by routing the replacement through
+the matcher (`fill_top`), exactly as a fresh aggressor would be. No
+dedicated code path and no separate return type — the crossing fills
+surface as `FILLED` events (D13 payloads) inside the same
+`ExecutionResult`. Real venues treat this the same way; most don't even
+have a distinct "modify-crosses" message type.
 
 **API shape:**
 ```python
+# transition (OrderBook): in-place size-down → one payload (D13)
 def modify_order(
-    self, order_id: int, new_price: int, new_quantity: int
-) -> ExecutionReport: ...
+    self, order_id: int, new_quantity: int
+) -> ModifiedPayload: ...
+
+# policy (ModifyOrderExecution): orchestrates, returns the summary (D10)
+def execute(self, ...) -> ExecutionResult: ...
 ```
 
 **Consequences:**
-- Implementation is a thin orchestrator: decide size-down-in-place vs
-  cancel-and-repost; if the latter and the new order crosses, route
-  through `execute_order`.
+- `modify_order` stays a narrow primitive; the size-down-vs-repost branch
+  and crossing routing live in the executor (D6).
+- `ModifiedPayload` / `EventKind.MODIFIED` land here (D13).
 - IOC / FOK modification behaviour is explicitly **undefined** until
   those execution rules ship.
+
+---
+
+## D13 — Book primitives return typed payloads (symmetric returns)
+
+**Status:** current.
+
+**Decision:** every state-transition primitive on `OrderBook` returns a
+frozen payload describing the transition it performed — never `None`,
+never a policy-level summary. One payload type per primitive:
+
+| primitive       | returns                                            |
+|-----------------|----------------------------------------------------|
+| `post_order`    | `PostedPayload`                                    |
+| `cancel_order`  | `CancelledPayload`                                 |
+| `modify_order`  | `ModifiedPayload`                                  |
+| `fill_top`      | `list[FilledPayload]` (one per touched resting order) |
+
+Each payload carries `OrderSnapshot`s of what changed plus the minimal
+extra the transition produced (`FilledPayload.filled_qty`,
+`ModifiedPayload.original_order` / `modified_order`).
+
+**Rationale:**
+- Before this, `execute()` had no honest output channel and callers
+  re-introspected the book afterward (the leak named in D10). A payload
+  per primitive makes each transition self-reporting at its source.
+- The executor layer (policy, D6) composes these payloads — and only
+  these — into `Event`s (`Event.payload` is the `Payload` union, one
+  `EventKind` per payload) and into `ExecutionResult` / `ExecutionReport`
+  (D10). The book never builds an `ExecutionReport`; the executor never
+  mutates state. Each layer's return type matches its job.
+- "Symmetric" is *shape*, not identical fields: every transition reports
+  what it did in the same frozen-payload form, so the event log (D11)
+  appends a uniform stream. Fields differ because the transitions differ.
+
+**Rejected alternatives:**
+- Return `None` and let callers read the book afterward — the original
+  leak; non-replayable, couples every caller to book internals.
+- Return `ExecutionReport` from book primitives — conflates a single
+  transition with the executor's terminal summary and forces the book to
+  know `FillStatus` / `posted`, which are policy concepts.
+
+**Consequences:**
+- A new transition = a new payload type in the `Payload` union and a new
+  `EventKind`. `ModifiedPayload` and `EventKind.MODIFIED` (currently
+  backlogged in `custom_types.py`) land with `modify_order` (D12).
+- The event log (D11) and structured logging are pure consumers of the
+  payload stream — no new plumbing per transition.
+
+**C++ note:** payloads map to small `struct`s in a tagged union
+(`std::variant<Posted, Cancelled, Filled, Modified>`); `Event` is the
+variant plus an `EventKind` tag and a sequence number.
