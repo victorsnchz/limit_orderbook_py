@@ -14,7 +14,9 @@ from lob.bookkeeping.custom_types import (
 from lob.bookkeeping.exceptions import (
     DuplicateOrderError,
     InvalidOrderError,
+    OrderBookError,
     OrderNotFoundError,
+    PriceLevelNotFoundError,
 )
 from lob.orderbook.book_side import BookSide
 
@@ -567,6 +569,27 @@ class TestGetOrder(OrderbookBase):
         self.orderbook.ask_side = MagicMock()
         self.orderbook.get_order(1)
         self.assertEqual(self.orderbook.bid_side.method_calls, [])
+
+    def test_index_book_inconsistency_raises_orderbook_error(self):
+        self.orderbook._order_index[0] = (Side.BID, 99)
+        self.orderbook.bid_side = MagicMock()
+        self.orderbook.bid_side.get_order.side_effect = OrderNotFoundError("gone")
+
+        with self.assertRaises(OrderBookError) as ctx:
+            self.orderbook.get_order(0)
+
+        self.assertNotIsInstance(ctx.exception, OrderNotFoundError)
+        self.assertIsInstance(ctx.exception.__cause__, OrderNotFoundError)
+
+    def test_index_book_inconsistency_chains_price_level_not_found(self):
+        self.orderbook._order_index[0] = (Side.BID, 99)
+        self.orderbook.bid_side = MagicMock()
+        self.orderbook.bid_side.get_order.side_effect = PriceLevelNotFoundError("gone")
+
+        with self.assertRaises(OrderBookError) as ctx:
+            self.orderbook.get_order(0)
+
+        self.assertIsInstance(ctx.exception.__cause__, PriceLevelNotFoundError)
 
 
 class TestCancelOrder(OrderbookBase):

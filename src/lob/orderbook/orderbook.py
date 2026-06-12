@@ -15,6 +15,7 @@ from lob.bookkeeping.custom_types import (
 from lob.bookkeeping.exceptions import (
     DuplicateOrderError,
     InvalidOrderError,
+    OrderBookError,
     OrderNotFoundError,
     PriceLevelNotFoundError,
 )
@@ -122,10 +123,10 @@ class OrderBook:
         try:
             return self.get_book_side(side).get_order(price, order_id)
         except (OrderNotFoundError, PriceLevelNotFoundError) as exc:
-            raise AssertionError(
+            raise OrderBookError(
                 f"index/book inconsistency: order {order_id} indexed at "
-                f"{side}/{price} but abscent from book."
-            )
+                f"{side}/{price} but absent from book."
+            ) from exc
 
     def __contains__(self, order_id: int) -> bool:
         return order_id in self._order_index
