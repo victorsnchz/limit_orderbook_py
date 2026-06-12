@@ -405,7 +405,7 @@ class TestLimitOrderExecutionExecutionResult(OrderExecutionIntegrationBase):
 
         filled = [e for e in result.events if e.kind == EventKind.FILLED]
         self.assertEqual(len(filled), 2)
-        total = sum(e.payload.filled_qty for e in filled)
+        total = sum(e.payload.filled_quantity for e in filled)
         self.assertEqual(
             total, aggressor.initial_quantity - aggressor.remaining_quantity
         )
@@ -694,7 +694,7 @@ class TestMarketOrderExecutionExecutionResult(OrderExecutionIntegrationBase):
 
         filled = [e for e in result.events if e.kind == EventKind.FILLED]
         self.assertEqual(len(filled), 2)
-        total = sum(e.payload.filled_qty for e in filled)
+        total = sum(e.payload.filled_quantity for e in filled)
         self.assertEqual(
             total, aggressor.initial_quantity - aggressor.remaining_quantity
         )

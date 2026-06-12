@@ -443,7 +443,7 @@ class TestFillTop(OrderbookBase):
         target_payloads = []
         for i, order in enumerate(resting):
             snapshot_resting = order.snapshot()
-            target_payloads.append(FilledPayload(snapshot_resting, filled_qty=100))
+            target_payloads.append(FilledPayload(snapshot_resting, filled_quantity=100))
 
             self.orderbook.bid_side.top_level.add_order(order)
             self.orderbook._order_index[order.order_id] = (
@@ -547,7 +547,7 @@ class TestFillTop(OrderbookBase):
 
 class TestGetOrder(OrderbookBase):
     def test_unknown_order_raises(self):
-        with self.assertRaises(InvalidOrderError):
+        with self.assertRaises(OrderNotFoundError):
             self.orderbook.get_order(0)
 
     def test_retrieves_from_correct_side_and_level(self):

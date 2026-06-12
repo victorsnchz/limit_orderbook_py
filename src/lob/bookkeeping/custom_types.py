@@ -67,7 +67,7 @@ class RejectedPayload:
 @dataclass(frozen=True)
 class FilledPayload:
     resting: OrderSnapshot
-    filled_qty: int
+    filled_quantity: int
 
 
 @dataclass(frozen=True)
@@ -80,9 +80,26 @@ class CancelledPayload:
     aggressor: OrderSnapshot
 
 
+@dataclass(frozen=True)
+class ExecutionReport:
+    aggressor: OrderSnapshot
+    posted: bool
+    status: FillStatus
+
+
 Payload = (
     AcceptedPayload | FilledPayload | PostedPayload | RejectedPayload | CancelledPayload
 )
+
+
+PAYLOAD_KIND: dict[type, EventKind] = {
+    AcceptedPayload: EventKind.ACCEPTED,
+    RejectedPayload: EventKind.REJECTED,
+    FilledPayload: EventKind.FILLED,
+    PostedPayload: EventKind.POSTED,
+    CancelledPayload: EventKind.CANCELLED,
+    ModifiedPayload: EventKind.MODIFIED,
+}
 
 
 @dataclass(frozen=True)
@@ -93,12 +110,10 @@ class Event:
     # timestamp: str
     # sequence: int
 
-
-@dataclass(frozen=True)
-class ExecutionReport:
-    aggressor: OrderSnapshot
-    posted: bool
-    status: FillStatus
+    @classmethod
+    def of(cls, payload: Payload) -> "Event":
+        """Wrap `payload` in an Event, deriving its kind from PAYLOAD_KIND."""
+        return cls(kind=PAYLOAD_KIND[type(payload)], payload=payload)
 
 
 @dataclass(frozen=True)

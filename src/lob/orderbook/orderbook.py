@@ -206,12 +206,12 @@ class OrderBook:
             resting = queue.next_order_to_execute
             snapshot_resting = resting.snapshot()
 
-            filled_qty = resting.fill(aggressor.remaining_quantity)
-            aggressor.fill(filled_qty)
+            filled_quantity = resting.fill(aggressor.remaining_quantity)
+            aggressor.fill(filled_quantity)
 
             filled_payload = FilledPayload(
                 resting=snapshot_resting,
-                filled_qty=filled_qty,
+                filled_quantity=filled_quantity,
             )
             filled_payloads.append(filled_payload)
 

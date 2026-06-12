@@ -197,8 +197,8 @@ class TestMatch(OrderExecutionBase):
         self.order.is_filled = False
         executor = self._make_executor()
         executor._can_match_order = MagicMock(side_effect=[True, False])
-        payload1 = MagicMock(spec=FilledPayload)
-        payload2 = MagicMock(spec=FilledPayload)
+        payload1 = FilledPayload(_make_snapshot(), filled_quantity=10)
+        payload2 = FilledPayload(_make_snapshot(), filled_quantity=20)
         self.orderbook.fill_top.return_value = [payload1, payload2]
 
         executor._match()
@@ -210,7 +210,7 @@ class TestMatch(OrderExecutionBase):
         self.order.is_filled = False
         executor = self._make_executor()
         executor._can_match_order = MagicMock(side_effect=[True, False])
-        payload = MagicMock(spec=FilledPayload)
+        payload = FilledPayload(_make_snapshot(), filled_quantity=10)
         self.orderbook.fill_top.return_value = [payload]
 
         executor._match()
@@ -500,6 +500,7 @@ class TestLimitOrderExecutionDoExecute(LimitOrderExecutionBase):
 
     def test_posts_residual_when_not_filled(self):
         self.order.is_filled = False
+        self.orderbook.post_order.return_value = PostedPayload(_make_snapshot())
         executor = self._make_executor()
 
         executor._do_execute()
@@ -517,6 +518,7 @@ class TestLimitOrderExecutionDoExecute(LimitOrderExecutionBase):
     def test_records_posted_event_when_posted(self):
         self.order.is_filled = False
         self.order.snapshot.return_value = _make_snapshot()
+        self.orderbook.post_order.return_value = PostedPayload(_make_snapshot())
         executor = self._make_executor()
 
         executor._do_execute()
@@ -538,9 +540,12 @@ class TestLimitOrderExecutionDoExecute(LimitOrderExecutionBase):
         executor = self._make_executor()
         call_log = []
         executor._match.side_effect = lambda: call_log.append("match")
-        self.orderbook.post_order.side_effect = lambda *a, **kw: call_log.append(
-            "post_order"
-        )
+
+        def _post(*a, **kw):
+            call_log.append("post_order")
+            return PostedPayload(_make_snapshot())
+
+        self.orderbook.post_order.side_effect = _post
 
         executor._do_execute()
 

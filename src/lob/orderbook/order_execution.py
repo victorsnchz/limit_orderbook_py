@@ -9,7 +9,6 @@ from lob.bookkeeping.custom_types import (
     PostedPayload,
     AcceptedPayload,
     RejectedPayload,
-    EventKind,
     ExecutionReport,
 )
 from abc import ABC, abstractmethod
@@ -90,19 +89,16 @@ class OrderExecution(ABC):
         while not self.order.is_filled and self._can_match_order():
             payloads = self.orderbook.fill_top(self.order)
             for payload in payloads:
-                self._events.append(Event(kind=EventKind.FILLED, payload=payload))
+                self._events.append(Event.of(payload))
 
     def _record_rejected(self, payload: RejectedPayload) -> None:
-        kind = EventKind.REJECTED
-        self._events.append(Event(kind=kind, payload=payload))
+        self._events.append(Event.of(payload))
 
     def _record_accepted(self, payload: AcceptedPayload) -> None:
-        kind = EventKind.ACCEPTED
-        self._events.append(Event(kind=kind, payload=payload))
+        self._events.append(Event.of(payload))
 
     def _record_posted(self, posted_payload: PostedPayload) -> None:
-        kind = EventKind.POSTED
-        self._events.append(Event(kind=kind, payload=posted_payload))
+        self._events.append(Event.of(posted_payload))
         self._posted = True
 
     def _compute_status(self) -> FillStatus:
