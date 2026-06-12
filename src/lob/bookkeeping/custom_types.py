@@ -14,6 +14,8 @@ class Side(enum.Enum):
 
 
 class OrderType(enum.Enum):
+    """Order pricing type: market (no limit) or limit."""
+
     MARKET = enum.auto()
     LIMIT = enum.auto()
 
@@ -50,12 +52,16 @@ class LevelState:
 
 
 class FillStatus(enum.Enum):
+    """Degree to which an order's quantity was filled."""
+
     FILLED = enum.auto()
     PARTIALLY_FILLED = enum.auto()
     UNFILLED = enum.auto()
 
 
 class EventKind(enum.Enum):
+    """Tag identifying which payload an Event carries."""
+
     ACCEPTED = enum.auto()
     REJECTED = enum.auto()
     FILLED = enum.auto()

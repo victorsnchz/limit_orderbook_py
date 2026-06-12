@@ -18,11 +18,11 @@ class OrdersQueue:
     """
 
     def __init__(self):
-        # Python dicts preserve insertion order since 3.7
-        # OrderedDict redundant BUT clarifies purpose of this data struct
+        # Dicts preserve insertion order since Python 3.7, so OrderedDict is
+        # redundant here, but it documents that FIFO ordering is intentional.
         self._queue: collections.OrderedDict[int, Order] = collections.OrderedDict()
 
-    # TODO: unittest
+    # TODO: add unit tests for __contains__.
     def __contains__(self, order_id: int) -> bool:
         return order_id in self._queue
 
@@ -77,7 +77,7 @@ class OrdersQueue:
 
         return volume
 
-    # TODO: unittest
+    # TODO: add unit tests for get_order.
     def get_order(self, order_id: int) -> Order:
         """
         Return the order with `order_id`. Raises `OrderNotFoundError` if absent.

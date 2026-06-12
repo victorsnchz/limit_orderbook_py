@@ -137,7 +137,7 @@ class Order:
 
         self.remaining_quantity = new_quantity
 
-    # --- order snapshot at given time ---
+    # --- order snapshot ---
 
     def snapshot(self) -> OrderSnapshot:
         """
