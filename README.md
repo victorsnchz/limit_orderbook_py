@@ -92,12 +92,13 @@ In phase order. The full version, with rationale, is in
 [ROADMAP.md](docs/ROADMAP.md). Highlights:
 
 **Phase 1 — engine completeness.** The executor layer over the shipped
-`cancel_order` / `modify_order` primitives: `CancelOrderExecution` (1.8a)
-turns cancel requests into `ACCEPTED | REJECTED | CANCELLED` events, and
-`modify_order` (1.9, semantics in D12 — size-down keeps queue priority,
-everything else is cancel-and-repost; crossing modifies route through the
-matcher and surface as `FILLED` events, like any aggressor (D13)).
-`assert_book_consistent()` as an integration-only invariant probe (1.7).
+book primitives. `ModifyOrderExecution` has landed (1.9, D12 — size-down
+keeps queue priority, everything else is cancel-and-repost; crossing
+modifies route through the matcher and surface as `FILLED` events, like
+any aggressor (D13), all in one `ExecutionResult`). Still pending:
+`CancelOrderExecution` (1.8a), turning cancel requests into `ACCEPTED |
+REJECTED | CANCELLED` events, and `assert_book_consistent()` as an
+integration-only invariant probe (1.7).
 
 **Phase 2 — observability.** Append-only event log with monotone sequence
 numbers (D11, 2.3): every state transition is one event. The snapshot
@@ -162,9 +163,12 @@ and CME implement; the fairness rule is *you cannot improve queue
 position without paying for it with a fresh timestamp*. Crossing
 modifies are mechanically `cancel_order` followed by routing the
 replacement through the matcher, like any other aggressor — no separate
-code path, no separate return type. The book's `modify_order` returns a
-`ModifiedPayload` (D13); a `ModifyOrderExecution` composes the
-`ExecutionReport`, matching how real venues handle it.
+code path, no separate return type. `ModifyOrderExecution.amend` returns
+a single `ExecutionResult` (D10/D14) like every other execution: a
+size-down is one `MODIFIED` event; a cancel-and-repost is one event
+stream led by a `CANCELLED` (the original, narrated first) followed by
+the replacement's `ACCEPTED | FILLED* | POSTED`. The earlier bespoke
+`CancelAndExecuteResult` was retired — see D14.
 
 ### Execution output is a typed contract (D10)
 

@@ -347,7 +347,7 @@ the log subsumes it.
 
 ## D12 — Modify Semantics
 
-**Status:** pending.
+**Status:** current.
 
 **Decision:** follow real-exchange behaviour. A modify at the same price
 with strictly lower quantity keeps queue priority. Any other modify —
@@ -363,15 +363,33 @@ it with a fresh timestamp. Size-down is harmless and preserves priority.
 but penalises benign size reductions and diverges from every major venue.
 
 **Layering (D6 + D13):**
-- `OrderBook.modify_order` is the *transition* primitive — the in-place
-  size-down that mutates `remaining_quantity` while keeping queue
-  position, and returns `ModifiedPayload(original_order, modified_order)`
-  (D13). It performs one mutation; it does not orchestrate.
-- A `ModifyOrderExecution` strategy (*policy*, sibling of the planned
-  `CancelOrderExecution`) decides size-down-in-place vs cancel-and-repost,
-  performs the latter by composing `cancel_order` + `post_order` / match,
-  and returns `ExecutionResult` / `ExecutionReport` (D10) like any other
-  execution. The book primitive never returns an `ExecutionReport`.
+- The *transition* primitive on `OrderBook` is the in-place size-down that
+  mutates `remaining_quantity` while keeping queue position, and returns
+  `ModifiedPayload(original_order, modified_order)` (D13). It performs one
+  mutation; it does not orchestrate. Currently shipped as
+  `reduce_order_quantity`; `modify_order` is its canonical name (rename
+  pending, noted in D14).
+- The `ModifyOrderExecution` *policy* decides size-down-in-place vs
+  cancel-and-repost and, like every execution, returns a single
+  `ExecutionResult` (D10/D14) — never a bespoke per-operation result. The
+  book primitive never returns an `ExecutionReport`.
+
+**One envelope, one event stream (D14):** both branches return
+`ExecutionResult`. Size-down wraps its `ModifiedPayload` as one `MODIFIED`
+event with a report of `posted=True, status=UNFILLED` (the order is
+resting, nothing traded). Cancel-and-repost composes `cancel_order` +
+`post_order` / match into **one** events list led by a `CANCELLED` event,
+then the replacement's `ACCEPTED` / `FILLED*` / `POSTED`.
+
+**Cancel-last, narrate-cancel-first.** The original is cancelled only
+*after* the replacement is accepted — so a rejected replacement never
+loses the order (the stream then carries `REJECTED`, no `CANCELLED`, and
+`is_rejected` is the whole signal). But the `CANCELLED` event is
+*prepended* to the stream so the causal narrative reads old-order-leaves →
+new-order-acts. Book-mutation order and event-stream order are allowed to
+differ; the stream is assembled from already-frozen payloads. (D11
+sequence numbers must therefore be stamped at stream-assembly order, not
+at mutation time.)
 
 **Crossing modifies:** a cancel-and-repost whose replacement crosses is
 mechanically `cancel_order` followed by routing the replacement through
@@ -381,21 +399,35 @@ surface as `FILLED` events (D13 payloads) inside the same
 `ExecutionResult`. Real venues treat this the same way; most don't even
 have a distinct "modify-crosses" message type.
 
+**Rejected alternative (retired):** an earlier draft of the amend path
+returned a bespoke `CancelAndExecuteResult(cancelled, execution_result)`
+inside an `AmendmentResult = ModifiedPayload | CancelAndExecuteResult`
+union. This mixed two altitudes (an atomic payload OR a composite),
+forced callers to `isinstance`-branch and reach to different depths, and
+hid the cancellation in a sibling field where the D11 log would miss it.
+Retired in favour of the single-`ExecutionResult` shape above — the
+cautionary example behind D14.
+
 **API shape:**
 ```python
 # transition (OrderBook): in-place size-down → one payload (D13)
-def modify_order(
+def reduce_order_quantity(   # canonical: modify_order
     self, order_id: int, new_quantity: int
 ) -> ModifiedPayload: ...
 
 # policy (ModifyOrderExecution): orchestrates, returns the summary (D10)
-def execute(self, ...) -> ExecutionResult: ...
+def amend(
+    self, new_price: int | None, new_quantity: int | None
+) -> ExecutionResult: ...
 ```
 
 **Consequences:**
-- `modify_order` stays a narrow primitive; the size-down-vs-repost branch
-  and crossing routing live in the executor (D6).
-- `ModifiedPayload` / `EventKind.MODIFIED` land here (D13).
+- The book primitive stays narrow; the size-down-vs-repost branch and
+  crossing routing live in the executor (D6).
+- `ModifiedPayload` / `EventKind.MODIFIED` are live (D13).
+- A well-formed `amend` cannot produce a rejected replacement (inputs are
+  validated before cloning); the rejection branch is a defensive guarantee
+  exercised directly, not through the public call.
 - IOC / FOK modification behaviour is explicitly **undefined** until
   those execution rules ship.
 
@@ -442,11 +474,66 @@ extra the transition produced (`FilledPayload.filled_qty`,
 
 **Consequences:**
 - A new transition = a new payload type in the `Payload` union and a new
-  `EventKind`. `ModifiedPayload` and `EventKind.MODIFIED` (currently
-  backlogged in `custom_types.py`) land with `modify_order` (D12).
+  `EventKind`. `ModifiedPayload` / `EventKind.MODIFIED` are live (landed
+  with the modify policy, D12).
+- The kind paired with a payload is fixed once, in a `PAYLOAD_KIND`
+  table, and events are built via `Event.of(payload)` — the discriminant
+  is derived from the payload type, so it can never drift (D14).
 - The event log (D11) and structured logging are pure consumers of the
   payload stream — no new plumbing per transition.
 
 **C++ note:** payloads map to small `struct`s in a tagged union
 (`std::variant<Posted, Cancelled, Filled, Modified>`); `Event` is the
 variant plus an `EventKind` tag and a sequence number.
+
+---
+
+## D14 — Return-type altitude law
+
+**Status:** current.
+
+**Decision:** there are exactly three return-shape tiers, one rule each.
+A new operation reuses them; it does not invent a fourth.
+
+| tier        | what it is                                  | rule                                                        |
+|-------------|---------------------------------------------|-------------------------------------------------------------|
+| `*Payload`  | one atomic transition (frozen)              | member of the `Payload` union; one per `EventKind`; only ever surfaced wrapped in an `Event` |
+| `*Report`   | a policy's terminal summary (frozen)        | in no union; one per policy family (`ExecutionReport`)      |
+| `*Result`   | the policy envelope = `report + events`     | **exactly one exists: `ExecutionResult`** — every policy returns it; never add a `FooResult` |
+
+**The test:** if you are tempted to add a `FooResult`, you actually want
+one of — a new `EventKind` + payload inside `ExecutionResult.events`, or a
+field on `ExecutionReport`. The retired `CancelAndExecuteResult` /
+`AmendmentResult` (see D12) is the worked example of getting this wrong:
+it added a second envelope, mixed altitudes in a union, and demoted a
+transition (the cancel) to a sibling field where the event stream — and
+thus the D11 log — could not see it.
+
+**Two payload tiers.** The `Payload` union mixes two kinds of payload, and
+the distinction matters:
+- *Book-transition payloads* — `Posted`, `Cancelled`, `Filled`,
+  `Modified`. Emitted by `OrderBook` primitives, one per transition (D13).
+- *Policy-lifecycle payloads* — `Accepted`, `Rejected`. Emitted by
+  `OrderExecution` to bracket an execution's admission/rejection; there is
+  no book transition behind them.
+
+Both ride the same `Event` stream (the log does not care who minted a
+payload), but `Accepted`/`Rejected` must **not** be pushed down into the
+book — they are policy facts, not state transitions.
+
+**Kind never drifts from payload.** The `EventKind` that pairs with each
+payload type is declared once in `PAYLOAD_KIND` and events are built with
+`Event.of(payload)`. Hand-writing `Event(kind, payload)` is disallowed —
+it lets the discriminant disagree with its payload.
+
+**Notes:**
+- Cancel-and-repost (D12) emits **two** distinct `order_id`s: the old id
+  in the `CANCELLED` event, a fresh id in the `ACCEPTED` / `POSTED`
+  events. Size-down keeps the id. A log consumer must not assume one
+  amend = one id.
+- D11 sequence numbers are stamped at **stream-assembly order**, not at
+  mutation time — otherwise the prepended `CANCELLED` (D12) inverts
+  against its replacement events.
+- Known naming gap: the size-down primitive ships as
+  `reduce_order_quantity`; its canonical D13 name is `modify_order`.
+  Rename is a separate mechanical follow-up.
