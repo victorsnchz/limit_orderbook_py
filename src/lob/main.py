@@ -1,8 +1,6 @@
-from orderbook.orderbook import OrderBook
-
-
-def main(): ...
+def main() -> None:
+    """Entry point. Not yet implemented."""
 
 
 if __name__ == "__main__":
-    orderbook = OrderBook()
+    main()
