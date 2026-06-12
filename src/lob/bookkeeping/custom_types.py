@@ -50,7 +50,7 @@ class EventKind(enum.Enum):
     FILLED = enum.auto()
     POSTED = enum.auto()
     CANCELLED = enum.auto()
-    # backlog: MODIFIED
+    MODIFIED = enum.auto()
 
 
 @dataclass(frozen=True)
@@ -81,6 +81,12 @@ class CancelledPayload:
 
 
 @dataclass(frozen=True)
+class ModifiedPayload:
+    original_order: OrderSnapshot
+    modified_order: OrderSnapshot
+
+
+@dataclass(frozen=True)
 class ExecutionReport:
     aggressor: OrderSnapshot
     posted: bool
@@ -88,7 +94,12 @@ class ExecutionReport:
 
 
 Payload = (
-    AcceptedPayload | FilledPayload | PostedPayload | RejectedPayload | CancelledPayload
+    AcceptedPayload
+    | RejectedPayload
+    | FilledPayload
+    | PostedPayload
+    | CancelledPayload
+    | ModifiedPayload
 )
 
 
@@ -120,3 +131,12 @@ class Event:
 class ExecutionResult:
     report: ExecutionReport
     events: list[Event]
+
+    @property
+    def is_rejected(self) -> bool:
+
+        for event in self.events:
+            if event.kind == EventKind.REJECTED:
+                return True
+
+        return False

@@ -10,6 +10,7 @@ from lob.bookkeeping.custom_types import (
     OrderType,
     PostedPayload,
     CancelledPayload,
+    ModifiedPayload,
 )
 from lob.bookkeeping.exceptions import OrderNotFoundError, PriceLevelNotFoundError
 from lob.orders.order import Order
@@ -229,3 +230,12 @@ class OrderBook:
             opposite_book_side.delete_level(opposite_book_side.best_price)
 
         return filled_payloads
+
+    def modify_order(self, order_id: int, quantity: int) -> ModifiedPayload:
+        assert order_id in self, f"order {order_id} not found in orderbook"
+
+        order = self.get_order(order_id)
+        initial_snapshot = order.snapshot()
+        order.reduce(quantity)
+        new_snapshot = order.snapshot()
+        return ModifiedPayload(initial_snapshot, new_snapshot)

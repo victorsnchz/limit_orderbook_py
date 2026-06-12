@@ -13,6 +13,10 @@ class InvalidOrderError(OrderBookError):
     pass
 
 
+class InvalidModificationError(OrderBookError):
+    pass
+
+
 # --- Book_side errors and exceptions --------------------------------------------------
 
 
