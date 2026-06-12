@@ -118,11 +118,15 @@ class Order:
         Lower `remaining_quantity` to `new_quantity`. Raises if it would not strictly reduce.
         """
 
-        if new_quantity >= self.remaining_quantity:
-            raise ValueError(
-                "new_quantity must be less than remaining quantity "
-                "else cancel and psot new order."
-            )
+        assert new_quantity != self.remaining_quantity, (
+            "new_quantity cannot be equal to remaining_quantity, must be strictly less."
+        )
+
+        assert new_quantity < self.remaining_quantity, (
+            "new_quantity must be less than remaining_quantity. else cancel and post."
+        )
+
+        assert new_quantity > 0, "new_quantity must be strictly positive."
 
         self.remaining_quantity = new_quantity
 

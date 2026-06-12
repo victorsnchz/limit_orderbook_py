@@ -19,7 +19,7 @@ class TestOrderConstruction(unittest.TestCase):
         order = Order(specs, id)
         self.assertEqual(order.remaining_quantity, order.initial_quantity)
 
-    def test_is_filled_false_on_init(self):
+    def test_is_filled_false_on_ini(self):
         specs = OrderSpec(
             side=Side.BID,
             order_type=OrderType.LIMIT,
@@ -160,12 +160,20 @@ class TestOrderReduce(unittest.TestCase):
         self.assertEqual(self.order.remaining_quantity, 50)
 
     def test_reduce_to_larger_value_raises(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AssertionError):
             self.order.reduce(1000)
 
     def test_reduce_to_equal_value_raises(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AssertionError):
             self.order.reduce(100)
+
+    def test_reduce_to_negative_raises(self):
+        with self.assertRaises(AssertionError):
+            self.order.reduce(-1)
+
+    def test_reduce_to_zero_raises(self):
+        with self.assertRaises(AssertionError):
+            self.order.reduce(0)
 
 
 class TestOrderSpec(unittest.TestCase):

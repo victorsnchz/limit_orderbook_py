@@ -11,7 +11,7 @@ from lob.bookkeeping.custom_types import (
     PostedPayload,
     CancelledPayload,
 )
-from lob.bookkeeping.exceptions import DuplicateOrderError, InvalidOrderError
+from lob.bookkeeping.exceptions import OrderNotFoundError, PriceLevelNotFoundError
 from lob.orders.order import Order
 
 
@@ -105,15 +105,21 @@ class OrderBook:
 
     def get_order(self, order_id: int) -> Order:
         """
-        Return the resting order with `order_id`. Raises `InvalidOrderError` if absent.
+        Return the resting order with `order_id`. Raises `OrderNotFoundError` if absent.
         """
 
         if order_id not in self._order_index:
-            raise InvalidOrderError(f"order {order_id} not in book")
+            raise OrderNotFoundError(f"order {order_id} not in book")
 
         side, price = self._order_index[order_id]
 
-        return self.get_book_side(side).get_order(price, order_id)
+        try:
+            return self.get_book_side(side).get_order(price, order_id)
+        except (OrderNotFoundError, PriceLevelNotFoundError) as exc:
+            raise AssertionError(
+                f"index/book inconsistency: order {order_id} indexed at "
+                f"{side}/{price} but abscent from book."
+            )
 
     def __contains__(self, order_id: int) -> bool:
         return order_id in self._order_index
@@ -153,7 +159,7 @@ class OrderBook:
             ) or (
                 order.side == Side.ASK and order.limit_price <= opposite_side.best_price
             )
-            assert not crosses, f"post expects non-crossing orders only"
+            assert not crosses, "post expects non-crossing orders only"
 
     def post_order(self, order: Order) -> PostedPayload:
         """

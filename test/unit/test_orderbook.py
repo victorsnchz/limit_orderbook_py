@@ -12,7 +12,7 @@ from lob.bookkeeping.custom_types import (
     CancelledPayload,
 )
 from lob.bookkeeping.exceptions import (
-    InvalidOrderError,
+    OrderNotFoundError,
 )
 from lob.orderbook.book_side import BookSide
 
