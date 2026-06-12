@@ -12,7 +12,12 @@ from lob.bookkeeping.custom_types import (
     CancelledPayload,
     ModifiedPayload,
 )
-from lob.bookkeeping.exceptions import OrderNotFoundError, PriceLevelNotFoundError
+from lob.bookkeeping.exceptions import (
+    DuplicateOrderError,
+    InvalidOrderError,
+    OrderNotFoundError,
+    PriceLevelNotFoundError,
+)
 from lob.orders.order import Order
 
 
@@ -125,33 +130,42 @@ class OrderBook:
     def __contains__(self, order_id: int) -> bool:
         return order_id in self._order_index
 
-    def _assert_postable(self, order: Order) -> None:
+    def _validate_postable(self, order: Order) -> None:
+        """
+        Enforce post preconditions. Raises `InvalidOrderError` on non-LIMIT type,
+        filled order, non-positive quantity, missing/non-positive price, or a
+        crossing price; `DuplicateOrderError` on a duplicate id.
+        """
 
-        # preconditions are invariant
-        # enforce guardrail checks
+        if order.order_type is not OrderType.LIMIT:
+            raise InvalidOrderError(
+                f"cannot post to book an order of type {order.order_type}"
+            )
 
-        assert order.order_type is OrderType.LIMIT, (
-            f"cannot post to book an order of type {order.order_type}"
-        )
+        if order.order_id in self:
+            raise DuplicateOrderError(
+                f"order {order.order_id} already exists in book"
+            )
 
-        assert order.order_id not in self, (
-            f"order {order.order_id} already exists in book"
-        )
+        if order.is_filled:
+            raise InvalidOrderError(
+                f"order {order.order_id} is filled, cannot post to book"
+            )
 
-        assert not order.is_filled, (
-            f"order {order.order_id} is filled, cannot post to book"
-        )
+        if order.remaining_quantity <= 0:
+            raise InvalidOrderError(
+                f"order {order.order_id} has <= 0 quantity, cannot post to book"
+            )
 
-        assert order.remaining_quantity > 0, (
-            f"order {order.order_id} has <= 0 quantity, cannot post to book"
-        )
-        assert order.limit_price is not None, (
-            f"order {order.order_id} has no price, cannot post to book"
-        )
+        if order.limit_price is None:
+            raise InvalidOrderError(
+                f"order {order.order_id} has no price, cannot post to book"
+            )
 
-        assert order.limit_price > 0, (
-            f"order {order.order_id} has negative price, cannot post to book"
-        )
+        if order.limit_price <= 0:
+            raise InvalidOrderError(
+                f"order {order.order_id} has non-positive price, cannot post to book"
+            )
 
         opposite_side = self.get_opposite_book_side(order.side)
         if not opposite_side.is_empty:
@@ -160,7 +174,8 @@ class OrderBook:
             ) or (
                 order.side == Side.ASK and order.limit_price <= opposite_side.best_price
             )
-            assert not crosses, "post expects non-crossing orders only"
+            if crosses:
+                raise InvalidOrderError("post expects non-crossing orders only")
 
     def post_order(self, order: Order) -> PostedPayload:
         """
@@ -169,7 +184,7 @@ class OrderBook:
         would cross the opposite top.
         """
 
-        self._assert_postable(order)
+        self._validate_postable(order)
 
         snapshot = order.snapshot()
 
@@ -180,8 +195,13 @@ class OrderBook:
         return PostedPayload(snapshot)
 
     def cancel_order(self, order_id: int) -> CancelledPayload:
+        """
+        Remove the order with `order_id` from its side and index. Raises
+        `OrderNotFoundError` if absent.
+        """
 
-        assert order_id in self, f"order {order_id} not found in orderbook"
+        if order_id not in self:
+            raise OrderNotFoundError(f"order {order_id} not found in orderbook")
 
         snapshot = self.get_order(order_id).snapshot()
         side, price = self._order_index[order_id]
@@ -232,7 +252,13 @@ class OrderBook:
         return filled_payloads
 
     def modify_order(self, order_id: int, quantity: int) -> ModifiedPayload:
-        assert order_id in self, f"order {order_id} not found in orderbook"
+        """
+        Reduce the resting order with `order_id` to `quantity` in place. Raises
+        `OrderNotFoundError` if absent.
+        """
+
+        if order_id not in self:
+            raise OrderNotFoundError(f"order {order_id} not found in orderbook")
 
         order = self.get_order(order_id)
         initial_snapshot = order.snapshot()

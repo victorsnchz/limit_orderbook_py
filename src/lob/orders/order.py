@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from lob.bookkeeping.custom_types import ExecutionRule, Side, OrderType, OrderSnapshot
+from lob.bookkeeping.exceptions import InvalidModificationError
 from typing import Optional
 
 
@@ -118,15 +119,14 @@ class Order:
         Lower `remaining_quantity` to `new_quantity`. Raises if it would not strictly reduce.
         """
 
-        assert new_quantity != self.remaining_quantity, (
-            "new_quantity cannot be equal to remaining_quantity, must be strictly less."
-        )
+        if new_quantity <= 0:
+            raise InvalidModificationError("new_quantity must be strictly positive.")
 
-        assert new_quantity < self.remaining_quantity, (
-            "new_quantity must be less than remaining_quantity. else cancel and post."
-        )
-
-        assert new_quantity > 0, "new_quantity must be strictly positive."
+        if new_quantity >= self.remaining_quantity:
+            raise InvalidModificationError(
+                "new_quantity must be strictly less than remaining_quantity; "
+                "else cancel and post."
+            )
 
         self.remaining_quantity = new_quantity
 

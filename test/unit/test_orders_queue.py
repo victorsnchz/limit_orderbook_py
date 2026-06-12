@@ -120,11 +120,11 @@ class TestOrdersQueueCRUD(OrdersQueueTestBase):
     def test_remove_non_existent_raises(self):
         resting = self.make_order()
         self.orders_queue.add_order(resting)
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(OrderNotFoundError):
             self.orders_queue.remove_order(2)
 
     def test_remove_empty_raises(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(EmptyQueueError):
             self.orders_queue.remove_order(2)
 
     def test_next_on_empty_raises(self):

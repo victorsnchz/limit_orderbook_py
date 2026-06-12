@@ -2,6 +2,7 @@ import unittest
 
 from lob.orders.order import Order, OrderSpec, OrderID
 from lob.bookkeeping.custom_types import OrderType, Side, ExecutionRule
+from lob.bookkeeping.exceptions import InvalidModificationError
 
 
 class TestOrderConstruction(unittest.TestCase):
@@ -160,19 +161,19 @@ class TestOrderReduce(unittest.TestCase):
         self.assertEqual(self.order.remaining_quantity, 50)
 
     def test_reduce_to_larger_value_raises(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(InvalidModificationError):
             self.order.reduce(1000)
 
     def test_reduce_to_equal_value_raises(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(InvalidModificationError):
             self.order.reduce(100)
 
     def test_reduce_to_negative_raises(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(InvalidModificationError):
             self.order.reduce(-1)
 
     def test_reduce_to_zero_raises(self):
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(InvalidModificationError):
             self.order.reduce(0)
 
 

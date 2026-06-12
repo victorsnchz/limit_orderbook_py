@@ -37,10 +37,13 @@ class OrdersQueue:
 
     def remove_order(self, order_id: int) -> Order:
         """
-        Pop and return the order with `order_id`. Asserts non-empty and present.
+        Pop and return the order with `order_id`. Raises `EmptyQueueError` if the
+        queue is empty, `OrderNotFoundError` if the id is absent.
         """
-        assert not self.is_empty, "remove_order raised on empty queue"
-        assert order_id in self, "removing order not in queue"
+        if self.is_empty:
+            raise EmptyQueueError("remove_order called on empty queue")
+        if order_id not in self:
+            raise OrderNotFoundError(f"order {order_id} not in queue")
         return self._queue.pop(order_id)
 
     def get_state(self) -> LevelState:
