@@ -95,7 +95,7 @@ class Order:
             return self.limit_price >= opposite_best_price
         if self.side == Side.ASK:
             return self.limit_price <= opposite_best_price
-        raise ValueError("invalid side {self.side}")
+        raise ValueError(f"invalid side {self.side}")
 
     # --- mutable states ---
 
