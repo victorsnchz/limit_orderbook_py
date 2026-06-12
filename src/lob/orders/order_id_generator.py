@@ -1,3 +1,5 @@
+"""Thread-safe monotonic source of unique order ids."""
+
 import threading
 
 
@@ -11,6 +13,9 @@ class OrderIdGenerator:
         self._lock = threading.Lock()
 
     def next_id(self) -> int:
+        """
+        Return the next id, strictly increasing and unique across threads.
+        """
         with self._lock:
             self._counter += 1
             return self._counter

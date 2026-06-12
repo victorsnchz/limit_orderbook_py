@@ -175,7 +175,7 @@ class TestCancelAndRepostCrossing(ModifyOrderExecutionBase):
     """
     A price change whose replacement crosses routes through the matcher like
     any aggressor: the crossing fills surface as FILLED events inside the same
-    ExecutionResult (D12), still led by the CANCELLED of the original.
+    ExecutionResult, still led by the CANCELLED of the original.
     """
 
     def test_crossing_replacement_fills_in_one_stream(self):

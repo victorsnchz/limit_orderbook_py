@@ -1,3 +1,9 @@
+"""
+One side of the order book: price levels, each holding a FIFO queue. The
+bid/ask subclasses fix best-price direction. Cross-side matching is the
+caller's job.
+"""
+
 from lob.orderbook.orders_queue import OrdersQueue
 from lob.orders.order import Order
 from lob.bookkeeping.custom_types import LevelState
@@ -13,8 +19,9 @@ from typing import KeysView
 
 class BookSide(ABC):
     """
-    One side of the book: price levels in a SortedDict, each holding a FIFO queue.
-    O(1) at the top, O(log n) at arbitrary levels.
+    One side of the book: price levels each holding a FIFO queue. Constant-time
+    access at the best price, logarithmic at arbitrary prices. Subclasses fix
+    which price is best.
     """
 
     def __init__(self):
@@ -24,6 +31,9 @@ class BookSide(ABC):
 
     @property
     def prices(self) -> KeysView[int]:
+        """
+        Prices of all levels on this side.
+        """
         return self._levels.keys()
 
     @property
@@ -56,6 +66,11 @@ class BookSide(ABC):
             )
 
     def delete_order(self, order_id: int, price: int) -> None:
+        """
+        Remove the order with `order_id` from the level at `price`, dropping the
+        level if it empties. Raises `PriceLevelNotFoundError` if no level exists
+        at `price`, `OrderNotFoundError` if the order is not in it.
+        """
         level = self.get_level(price)
         level.remove_order(order_id)
         if level.is_empty:
@@ -110,7 +125,7 @@ class BookSide(ABC):
 
         return states
 
-    # TODO: untitest
+    # TODO: unittest
     def get_level(self, price: int) -> OrdersQueue:
         """
         Return the queue at `price`. Raises `PriceLevelNotFoundError` if absent.

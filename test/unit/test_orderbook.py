@@ -459,7 +459,7 @@ class TestFillTop(OrderbookBase):
         for target_payload, returned_payload in zip(target_payloads, returned_payloads):
             self.assertEqual(target_payload, returned_payload)
 
-    # book-state invariants (D9)
+    # book-state invariants
     def test_fill_top_removes_fully_filled_resting_from_index(self):
 
         resting = self._make_limit_order(

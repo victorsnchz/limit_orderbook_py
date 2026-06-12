@@ -1,3 +1,8 @@
+"""
+Order-type execution strategies: validate an aggressor, match it against the
+book, and report the outcome as an `ExecutionResult`.
+"""
+
 from lob.orders.order import Order
 from lob.orderbook.orderbook import OrderBook
 from lob.orderbook.book_side import BookSide
@@ -45,7 +50,11 @@ class OrderExecution(ABC):
         return self._validate_type_specific()
 
     @abstractmethod
-    def _validate_type_specific(self) -> AcceptedPayload | RejectedPayload: ...
+    def _validate_type_specific(self) -> AcceptedPayload | RejectedPayload:
+        """
+        Order-type-specific validation run after the shared checks pass.
+        """
+        ...
 
     def execute(self) -> ExecutionResult:
         """
@@ -66,12 +75,16 @@ class OrderExecution(ABC):
         return self._execution_result
 
     @abstractmethod
-    def _do_execute(self): ...
+    def _do_execute(self):
+        """
+        Match and dispose of the accepted aggressor per its order type.
+        """
+        ...
 
     def _can_match_order(self) -> bool:
         """
-        Whether the aggressor would cross the opposite top.
-        Passes `None` to `Order.can_cross` when the opposite side is empty.
+        Whether the aggressor would cross the opposite top. An empty opposite
+        side counts as no cross.
         """
         best_price = (
             None
@@ -82,8 +95,8 @@ class OrderExecution(ABC):
 
     def _match(self) -> None:
         """
-        Drive `fill_top` across price levels until the aggressor fills or the
-        opposite side stops crossing, recording one FILLED event per touched resting.
+        Match across price levels until the aggressor fills or the opposite side
+        stops crossing. Records one FILLED event per touched resting order.
         """
 
         while not self.order.is_filled and self._can_match_order():
@@ -98,10 +111,17 @@ class OrderExecution(ABC):
         self._events.append(Event.of(payload))
 
     def _record_posted(self, posted_payload: PostedPayload) -> None:
+        """
+        Record a POSTED event and mark the aggressor as resting on the book.
+        """
         self._events.append(Event.of(posted_payload))
         self._posted = True
 
     def _compute_status(self) -> FillStatus:
+        """
+        Classify the aggressor as FILLED, UNFILLED, or PARTIALLY_FILLED by
+        remaining versus initial quantity.
+        """
         if self.order.is_filled:
             return FillStatus.FILLED
         if self.order.initial_quantity == self.order.remaining_quantity:
@@ -176,6 +196,9 @@ class MarketOrderExecution(OrderExecution):
         self._match()
 
     def _validate_type_specific(self) -> AcceptedPayload:
+        """
+        Always accepts; a market order carries no price to validate.
+        """
         return AcceptedPayload(self.order.snapshot())
 
 

@@ -32,9 +32,6 @@ class OrderBook:
         self.bid_side = BidSide()
         self.ask_side = AskSide()
 
-        # to consider:
-        #   - dedicatd method to add to order_index
-        #   - dedicatd order_index class if complexity grows (unlikely)
         self._order_index: dict[int, tuple[Side, int]] = {}
 
     # --- getters ----------------------------------------------------------------------

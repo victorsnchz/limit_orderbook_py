@@ -1,3 +1,8 @@
+"""
+Order model: immutable spec and identity, plus the mutable remaining quantity
+that drains as the order fills. Id generation and matching live elsewhere.
+"""
+
 from dataclasses import dataclass
 from lob.bookkeeping.custom_types import ExecutionRule, Side, OrderType, OrderSnapshot
 from lob.bookkeeping.exceptions import InvalidModificationError
@@ -17,17 +22,19 @@ class OrderSpec:
     execution_rule: Optional[ExecutionRule] = None
 
     def __post_init__(self):
+        """Validate that LIMIT orders carry a limit price."""
         if self.order_type == OrderType.LIMIT and self.limit_price is None:
             raise ValueError("Limit order expected to receive a limit price not None")
 
 
 @dataclass(frozen=True)
 class OrderID:
+    """
+    Immutable identity: the order's unique id and its owning user.
+    """
+
     order_id: int
     user_id: int
-
-    def __post_init__(self):
-        pass
 
 
 class Order:
@@ -133,7 +140,9 @@ class Order:
     # --- order snapshot at given time ---
 
     def snapshot(self) -> OrderSnapshot:
-
+        """
+        Return an immutable copy of the order's current state.
+        """
         return OrderSnapshot(
             self.side,
             self.order_type,

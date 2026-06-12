@@ -1,3 +1,7 @@
+"""
+FIFO order queue for a single price level, keyed by `order_id`.
+"""
+
 import collections
 from lob.orders.order import Order
 from lob.bookkeeping.exceptions import (

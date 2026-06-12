@@ -1,5 +1,7 @@
-# product = order
-# concrete = limit / market orders
+"""
+Per-type factories that assemble `Order`s from caller parameters and ids drawn
+from a shared generator. Order validation is the spec's job, not the factory's.
+"""
 
 from lob.orders.order import Order, OrderID, OrderSpec
 from abc import ABC, abstractmethod
@@ -18,10 +20,17 @@ class OrderFactory(ABC):
 
     @abstractmethod
     def create_order(self, side: Side, quantity: int, user_id: int, **kwargs) -> Order:
+        """
+        Build an `Order` of the factory's type with a freshly generated id.
+        """
         pass
 
 
 class LimitOrderFactory(OrderFactory):
+    """
+    Builds LIMIT `Order`s, which carry a limit price and execution rule.
+    """
+
     def __init__(self, generator: OrderIdGenerator):
         super().__init__(generator)
 
@@ -41,6 +50,10 @@ class LimitOrderFactory(OrderFactory):
 
 
 class MarketOrderFactory(OrderFactory):
+    """
+    Builds MARKET `Order`s, which carry no limit price or execution rule.
+    """
+
     def __init__(self, generator: OrderIdGenerator):
         super().__init__(generator)
 

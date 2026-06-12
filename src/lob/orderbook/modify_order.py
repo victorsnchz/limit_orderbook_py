@@ -1,3 +1,8 @@
+"""
+Modification of resting LIMIT orders: an in-place size-down that keeps queue
+priority, versus cancel-and-repost for any other change.
+"""
+
 from lob.orders.factory import OrderFactory
 from lob.orders.order import Order
 from lob.orderbook.order_execution import map_order_type_to_execution
@@ -14,10 +19,9 @@ from lob.bookkeeping.exceptions import InvalidModificationError
 
 class ModifyOrderExecution:
     """
-    Modify policy (D12): size-down keeps queue priority via an in-place book
-    transition; any other change is cancel-and-repost. Every branch returns a
-    single `ExecutionResult` (D10/D14), so a modify reads like any other
-    execution and its transitions land in one event stream.
+    Modifies a resting LIMIT order. A strict size-down reduces in place and
+    keeps queue priority; any other change (price, size-up) is cancel-and-repost.
+    Every path returns a single `ExecutionResult`.
     """
 
     def __init__(self, orderbook: OrderBook, order_id: int, factory: OrderFactory):
@@ -36,6 +40,12 @@ class ModifyOrderExecution:
     def modify(
         self, new_price: int | None, new_quantity: int | None
     ) -> ExecutionResult:
+        """
+        Apply a price and/or quantity change and return the resulting
+        `ExecutionResult`. Raises `InvalidModificationError` when neither
+        argument is given, a value is not a positive int, or the quantity
+        equals the current remaining quantity.
+        """
 
         if new_price is None and new_quantity is None:
             raise InvalidModificationError(
@@ -48,8 +58,6 @@ class ModifyOrderExecution:
         if new_quantity is not None:
             self._validate_quantity(new_quantity)
 
-        # Consider de-coupling the case new_price not None AND new_quantity not None
-        # for readability and maintainability
         if new_price is not None:
             new_order = self._clone_order(
                 new_price=new_price, new_quantity=new_quantity
@@ -63,6 +71,9 @@ class ModifyOrderExecution:
     # ==================================================================================
 
     def _validate_price(self, price: int):
+        """
+        Raise `InvalidModificationError` unless `price` is a strictly positive int.
+        """
         if not isinstance(price, int):
             raise InvalidModificationError(
                 f"new_price must be int, not {type(price).__name__}."
@@ -71,6 +82,9 @@ class ModifyOrderExecution:
             raise InvalidModificationError("new_price must be strictly positive.")
 
     def _validate_quantity(self, quantity: int):
+        """
+        Raise `InvalidModificationError` unless `quantity` is a strictly positive int.
+        """
         if not isinstance(quantity, int):
             raise InvalidModificationError(
                 f"new_quantity must be int, not {type(quantity).__name__}"
@@ -81,6 +95,10 @@ class ModifyOrderExecution:
     def _clone_order(
         self, new_price: int | None = None, new_quantity: int | None = None
     ) -> Order:
+        """
+        Build a replacement order, inheriting the original's price or quantity
+        for whichever argument is None.
+        """
 
         assert new_price is not None or new_quantity is not None, (
             "at least one of new_price/new_quantity must be set"
@@ -102,19 +120,21 @@ class ModifyOrderExecution:
         return new_order
 
     def _cancel_and_post(self, new_order: Order) -> ExecutionResult:
+        """
+        Execute `new_order`, then cancel the original only if it was not
+        rejected. On rejection the original stays resting and no CANCELLED event
+        is emitted; otherwise the events lead with the original's CANCELLED.
+        """
         order_exec = map_order_type_to_execution[new_order.order_type](
             new_order, self._orderbook
         )
         execution_result = order_exec.execute()
 
         if execution_result.is_rejected:
-            # Replacement rejected: leave the original resting. The REJECTED
-            # event is the whole story; nothing was cancelled.
             return execution_result
 
-        # Cancel the original LAST so a rejected replacement never loses the
-        # order, but narrate it FIRST: the old order leaves, then the new one
-        # is accepted/matched/posted. The prepend reorders frozen payloads only.
+        # Cancel the original last so a rejected replacement never loses the
+        # order, but narrate it first.
         cancelled = self._orderbook.cancel_order(self._order.order_id)
         return ExecutionResult(
             report=execution_result.report,
@@ -122,6 +142,11 @@ class ModifyOrderExecution:
         )
 
     def _modify_quantity(self, quantity: int) -> ExecutionResult:
+        """
+        Route a quantity-only change: reduce in place if smaller, cancel-and-
+        repost if larger. Raises `InvalidModificationError` if `quantity` equals
+        the current remaining quantity.
+        """
 
         if quantity == self._order.remaining_quantity:
             raise InvalidModificationError("no quantity to modify")
@@ -132,7 +157,10 @@ class ModifyOrderExecution:
         return self._increase_quantity(quantity)
 
     def _decrease_quantity(self, quantity: int) -> ExecutionResult:
-        # Size-down keeps queue priority: an in-place book transition, no fill.
+        """
+        Reduce the order in place, keeping its id and queue priority. Returns a
+        posted, UNFILLED result carrying a single MODIFIED event.
+        """
         modified = self._orderbook.modify_order(self._order.order_id, quantity)
         report = ExecutionReport(
             aggressor=modified.modified_order,
@@ -142,5 +170,9 @@ class ModifyOrderExecution:
         return ExecutionResult(report=report, events=[Event.of(modified)])
 
     def _increase_quantity(self, quantity: int) -> ExecutionResult:
+        """
+        Cancel-and-repost the order at the larger `quantity`, surrendering queue
+        priority.
+        """
         new_order = self._clone_order(new_quantity=quantity)
         return self._cancel_and_post(new_order)
