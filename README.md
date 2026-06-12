@@ -4,22 +4,23 @@
 
 A continuous-matching limit order book in Python. Single-process, in-memory,
 price-time priority, integer-tick arithmetic, typed event output. Written as a
-correctness-first reference implementation before a port to C++.
+correctness-first reference implementation before a port to C++/Rust.
 
 ---
 
 ## What
 
-Working matching enginer which supports limit and market aggressors,
-FIFO queues at each price level, multi-level walks across the book,
-typed result/event stream from every execution. State transitions and
-execution policy are split along a deliberate boundary (see D6 below). Every
-non-obvious choice is documented in [DECISIONS.md](docs/DECISIONS.md); the next
-work and its rationale live in [ROADMAP.md](docs/ROADMAP.md).
+A working matching engine: limit and market aggressors, modify (size-down
+keeps queue priority, everything else is cancel-and-repost), FIFO queues at
+each price level, multi-level walks across the book, and a typed
+result/event stream from every execution. State transitions and execution
+policy are split along a deliberate boundary (see D6 below). Every
+non-obvious choice is documented in [DECISIONS.md](docs/DECISIONS.md).
 
-Testing
-unit + integration tests pass
-Test split is bottom-up: each module (`Order`, `OrdersQueue`, `BookSide`, `OrderBook`, `OrderExecution`) has its own unit suite, and integration tests exercise the full
+**Testing.** Unit and integration suites both pass — 429 tests. The split
+is bottom-up: each module (`Order`, `OrdersQueue`, `BookSide`, `OrderBook`,
+`LimitOrderExecution` / `MarketOrderExecution`, `ModifyOrderExecution`) has
+its own unit suite, and integration tests exercise the full
 `OrderExecution → OrderBook → BookSide → OrdersQueue` stack.
 
 ## Why
@@ -30,7 +31,7 @@ Test split is bottom-up: each module (`Order`, `OrdersQueue`, `BookSide`, `Order
    ticks, frozen value objects, a single-source order index) translate cleanly to a typed-language rewrite.
 2. **A substrate for simulation.** Once the engine is correct and
    observable, agent-driven simulations and microstructure case studies
-   become a thin layer on (see *What's next*).
+   become a thin layer on top (see *What's next*).
 3. **A portfolio piece.** It's a public, end-to-end demonstration of how I
    reason about state, contracts, and trade-offs on a non-trivial system.
 
@@ -39,16 +40,16 @@ Test split is bottom-up: each module (`Order`, `OrdersQueue`, `BookSide`, `Order
 ## Run / test
 
 ```bash
-pip install -e .                          # editable install (sortedcontainers, matplotlib)
+pip install -e ".[test]"                  # editable install + pytest
 
-python -m unittest discover -s test       # full suite
-./test_by_module.bash                     # per-module, in dependency order,
-                                          # returns  only failed tests
+pytest                                    # full suite — 429 tests (what CI runs)
+python -m unittest discover -s test       # same suite via the stdlib runner
 ```
 
-Python ≥ 3.10. No third-party dependency in the engine path; `matplotlib`
-is for the depth-chart script (Phase 4) and `sortedcontainers` backs the
-per-side level map.
+Python ≥ 3.10; CI runs the suite on 3.10 / 3.11 / 3.12. The engine pulls in
+`sortedcontainers` for the per-side level map; `matplotlib` is declared for
+the depth-chart script (Phase 4) and is not yet used. `pytest` is the only
+test-time dependency.
 
 ---
 
@@ -57,16 +58,17 @@ per-side level map.
 ```
 src/lob/
 ├── orders/
-│   ├── order.py              # Order, OrderSpec, OrderSnapshot, FilledOrder
+│   ├── order.py              # Order (mutable), OrderSpec, OrderID
 │   ├── factory.py            # type-driven Order construction
 │   └── order_id_generator.py # atomic, monotonic, injectable (D1)
 ├── orderbook/
 │   ├── orders_queue.py       # FIFO queue at one price level (D8)
 │   ├── book_side.py          # SortedDict[price → OrdersQueue], top-of-book
 │   ├── orderbook.py          # bids + asks + order index (D9), state transitions (D6)
-│   └── order_execution.py    # LimitOrderExecution, MarketOrderExecution (D6, D10)
+│   ├── order_execution.py    # LimitOrderExecution, MarketOrderExecution (D6, D10)
+│   └── modify_order.py       # ModifyOrderExecution (D12, D14)
 └── bookkeeping/
-    ├── custom_types.py       # Side, OrderType, ExecutionRule, FillStatus, Event, payloads
+    ├── custom_types.py       # enums, Event/EventKind, payloads, snapshots, ExecutionResult
     ├── exceptions.py         # OrderBookError hierarchy (D7)
     └── settings.py           # tick size, configuration
 ```
@@ -81,43 +83,8 @@ src/lob/
 `OrderExecution.execute()` returns an `ExecutionResult` (D10) with a
 summary `ExecutionReport` (terminal aggressor state, fill status, whether
 residual posted) and an ordered `list[Event]` (`ACCEPTED | REJECTED |
-FILLED | POSTED`). One channel, no duplicate fields, ready to feed an
-append-only event log (D11) without API churn.
-
----
-
-## What's next
-
-In phase order. The full version, with rationale, is in
-[ROADMAP.md](docs/ROADMAP.md). Highlights:
-
-**Phase 1 — engine completeness.** The executor layer over the shipped
-book primitives. `ModifyOrderExecution` has landed (1.9, D12 — size-down
-keeps queue priority, everything else is cancel-and-repost; crossing
-modifies route through the matcher and surface as `FILLED` events, like
-any aggressor (D13), all in one `ExecutionResult`). Still pending:
-`CancelOrderExecution` (1.8a), turning cancel requests into `ACCEPTED |
-REJECTED | CANCELLED` events, and `assert_book_consistent()` as an
-integration-only invariant probe (1.7).
-
-**Phase 2 — observability.** Append-only event log with monotone sequence
-numbers (D11, 2.3): every state transition is one event. The snapshot
-`Saver` was decommissioned, not migrated — its replacement reader is a
-fresh projection over the log. This is the same model real exchanges
-publish (ITCH/FIX) and the substrate for replayable backtests.
-Structured logging at engine boundaries (2.5).
-
-**Phase 3 — hygiene.** Migrate the remaining float tick to integer
-`TICK_SIZE` / `TICK_SCALE` constants (D4 — type-level enforcement is
-already done; only `settings.py` is left). `mypy --strict` and `ruff` on
-CI (3.3, 3.4).
-
-**Phase 4 — simulation.** A `RandomAgent` (4.1), a deterministic
-`Simulation.run(n_agents, n_ticks, seed)` (4.2), depth-chart rendering
-(4.3). With the event log in place, all three are thin.
-
-**Phase 5 — port.** Once the contract is stable and the suite is green,
-the C++/Rust rewrite begins. The [DECISIONS.md](docs/DECISIONS.md) C++/Rust notes are the spec.
+FILLED | POSTED | CANCELLED | MODIFIED`). One channel, no duplicate
+fields, ready to feed an append-only event log (D11) without API churn.
 
 ---
 
@@ -157,13 +124,13 @@ exchange internals, and makes the C++ port trivially fast and exact.
 ### Modify semantics from real venues (D12)
 
 A modify at the same price with strictly lower quantity keeps queue
-priority. Anything else — price change, size up, side flip — is
+priority. Anything else — a price change or a size-up — is
 cancel-and-repost and loses priority. This is what Nasdaq, NYSE, LSE,
 and CME implement; the fairness rule is *you cannot improve queue
 position without paying for it with a fresh timestamp*. Crossing
 modifies are mechanically `cancel_order` followed by routing the
 replacement through the matcher, like any other aggressor — no separate
-code path, no separate return type. `ModifyOrderExecution.amend` returns
+code path, no separate return type. `ModifyOrderExecution.modify` returns
 a single `ExecutionResult` (D10/D14) like every other execution: a
 size-down is one `MODIFIED` event; a cancel-and-repost is one event
 stream led by a `CANCELLED` (the original, narrated first) followed by
@@ -175,9 +142,10 @@ the replacement's `ACCEPTED | FILLED* | POSTED`. The earlier bespoke
 `execute()` returns `ExecutionResult(report, events)`:
 `ExecutionReport` is a frozen summary (terminal aggressor state,
 `FillStatus`, whether residual posted), `events` is the ordered stream
-(`ACCEPTED | REJECTED | FILLED | POSTED`). One channel for fills, not
-two, so the same stream is what the event log (D11) will append. Cheap
-callers read `report.status`; replay-driven callers consume `events`.
+(`ACCEPTED | REJECTED | FILLED | POSTED | CANCELLED | MODIFIED`). One
+channel for fills, not two, so the same stream is what the event log
+(D11) will append. Cheap callers read `report.status`; replay-driven
+callers consume `events`.
 
 ### Symmetric returns: one payload per transition (D13)
 
@@ -191,19 +159,22 @@ job, and the event log (D11) appends a uniform stream.
 
 ### Frozen dataclasses for evolving objects
 
-`Order`, `OrderSpec`, `OrderSnapshot`, `FilledOrder`, `LevelState`,
-`ExecutionReport`, `ExecutionResult` are all `frozen=True`. Quantity
-filled and similar evolving fields live on the *mutable* `Order`
-container; everything that crosses a boundary (snapshots, events,
-reports) is immutable. The intent is to lock the structural contract
-while leaving the engine free to evolve runtime state, and to make the
-C++ port's `const` discipline a transcription rather than a redesign.
+Every value object that crosses a module boundary is `frozen=True`:
+`OrderSpec` and `OrderID` (inputs), `OrderSnapshot` and `LevelState`
+(views), the per-transition payloads, `Event`, and the
+`ExecutionReport` / `ExecutionResult` pair. The lone mutable exception
+is the `Order` container itself — `remaining_quantity` drains as the
+order fills, so it stays a plain class rather than a frozen dataclass.
+The intent is to lock the structural contract while leaving the engine
+free to evolve runtime state, and to make the C++ port's `const`
+discipline a transcription rather than a redesign.
 
 ### Typed exception hierarchy, not stringly errors (D7)
 
 Every domain error inherits from `OrderBookError`
-(`DuplicateOrderError`, `InvalidOrderError`, `OrderNotFoundError`,
-`PriceLevelNotFoundError`, `EmptyBookSideError`, `EmptyQueueError`).
+(`DuplicateOrderError`, `InvalidOrderError`, `InvalidModificationError`,
+`OrderNotFoundError`, `PriceLevelNotFoundError`, `EmptyBookSideError`,
+`EmptyQueueError`).
 Tests assert on the type; callers can write a single
 `except OrderBookError:` at a boundary without catching unrelated
 `KeyError` / `ValueError`. `assert` is reserved strictly for invariant
@@ -216,18 +187,18 @@ Each module shipped with its unit suite before the next one was built;
 integration tests landed once the stack was assembled. The split is
 visible in the test layout (`test/unit/*` per module,
 `test/integration/test_orderbook.py`,
-`test/integration/test_order_execution.py`). It's how the suite reached
-353 passing without snapshot tests or mocks of the engine itself.
+`test/integration/test_order_execution.py`,
+`test/integration/test_modify_order.py`). It's how the suite reached
+429 passing, built bottom-up rather than against a frozen golden output.
 
 ---
 
 ## Repo conventions
 
 - [docs/DECISIONS.md](docs/DECISIONS.md) — non-obvious or irreversible choices, with rejected
-  alternatives and (where applicable) C++ notes. Living document.
-- [docs/ROADMAP.md](docs/ROADMAP.md) — phased work, gated by an explicit *engine green* bar.
-  Tasks reference decision IDs.
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — diagram-oriented summary of the engine's structure.
+  alternatives and (where applicable) C++/Rust notes. Living document, and
+  the only tracked doc; the phased roadmap and architecture brief are kept
+  as local working notes.
 - Commits are scoped (`feat`, `refactor`, `test`, `chore`); the history
   is meant to be readable.
 
@@ -235,5 +206,5 @@ visible in the test layout (`test/unit/*` per module,
 
 ## Contact
 
-[github.com/thespielmaster](https://github.com) · written as a public artifact.
+[github.com/victorsnchz](https://github.com/victorsnchz) · written as a public artifact.
 Critique welcome.
